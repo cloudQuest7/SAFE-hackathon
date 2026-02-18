@@ -1,322 +1,349 @@
-'use client';
+"use client";
 
-import React, { useState } from 'react';
-import { motion } from 'framer-motion';
-import {
-  Mail,
-  Phone,
-  MapPin,
-  Github,
-  Linkedin,
-  Twitter,
-  Instagram,
-  Send,
-  ChevronUp,
-  Shield,
-  Code,
-  Cpu,
-} from 'lucide-react';
+import { useEffect, useRef } from "react";
+import Link from "next/link";
 
-const Footer = () => {
-  const [email, setEmail] = useState('');
-  const [isSubscribed, setIsSubscribed] = useState(false);
+const navLinks = [
+  { label: "Home", href: "/" },
+  { label: "About", href: "/about" },
+  { label: "Timeline", href: "/timeline" },
+  { label: "Tracks", href: "/tracks" },
+  { label: "FAQs", href: "/faq" },
+  { label: "Contact", href: "/contact" },
+];
 
-  const handleSubscribe = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (email) {
-      // Add your newsletter subscription logic here
-      setIsSubscribed(true);
-      setTimeout(() => {
-        setIsSubscribed(false);
-        setEmail('');
-      }, 3000);
-    }
-  };
+const socialLinks = [
+  {
+    label: "Instagram",
+    href: "https://instagram.com",
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <rect x="2" y="2" width="20" height="20" rx="5" ry="5" />
+        <circle cx="12" cy="12" r="4" />
+        <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor" stroke="none" />
+      </svg>
+    ),
+  },
+  {
+    label: "LinkedIn",
+    href: "https://linkedin.com",
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-4 0v7h-4v-7a6 6 0 0 1 6-6zM2 9h4v12H2z" />
+        <circle cx="4" cy="4" r="2" />
+      </svg>
+    ),
+  },
+  {
+    label: "X",
+    href: "https://x.com",
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+      </svg>
+    ),
+  },
+  {
+    label: "Discord",
+    href: "https://discord.com",
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128c.126-.094.252-.192.372-.292a.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+      </svg>
+    ),
+  },
+  {
+    label: "GitHub",
+    href: "https://github.com",
+    icon: (
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z" />
+      </svg>
+    ),
+  },
+];
 
-  const scrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-  };
+export default function Footer() {
+  const titleRef = useRef<HTMLDivElement>(null);
 
-  const quickLinks = [
-    { name: 'Register', href: '#register' },
-    { name: 'Problem Statements', href: '#problems' },
-    { name: 'Timeline', href: '#timeline' },
-    { name: 'Prizes', href: '#prizes' },
-    { name: 'Code of Conduct', href: '#conduct' },
-    { name: 'Past Events', href: '#past-events' },
-  ];
-
-  const socialLinks = [
-    { icon: Github, href: 'https://github.com/icell', label: 'GitHub' },
-    { icon: Linkedin, href: 'https://linkedin.com/company/icell', label: 'LinkedIn' },
-    { icon: Twitter, href: 'https://twitter.com/icell', label: 'Twitter' },
-    { icon: Instagram, href: 'https://instagram.com/icell', label: 'Instagram' },
-  ];
-
-  const contactInfo = [
-    { icon: Mail, text: 'hackathon@icell.edu', href: 'mailto:hackathon@icell.edu' },
-    { icon: Phone, text: '+91-XXXX-XXXXXX', href: 'tel:+91XXXXXXXXXX' },
-    { icon: MapPin, text: 'Your University, City', href: '#' },
-  ];
-
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
+  useEffect(() => {
+    const el = titleRef.current;
+    if (!el) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          el.classList.add("ftr-visible");
+          observer.disconnect();
+        }
       },
-    },
-  };
-
-  const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.5,
-      },
-    },
-  };
+      { threshold: 0.15 }
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <footer className="relative bg-[#1E2F23] text-gray-300 overflow-hidden">
-      {/* Noise Texture Overlay */}
-      <div className="absolute inset-0 opacity-[0.03] pointer-events-none">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIzMDAiIGhlaWdodD0iMzAwIj48ZmlsdGVyIGlkPSJhIiB4PSIwIiB5PSIwIj48ZmVUdXJidWxlbmNlIGJhc2VGcmVxdWVuY3k9Ii43NSIgc3RpdGNoVGlsZXM9InN0aXRjaCIgdHlwZT0iZnJhY3RhbE5vaXNlIi8+PGZlQ29sb3JNYXRyaXggdHlwZT0ic2F0dXJhdGUiIHZhbHVlcz0iMCIvPjwvZmlsdGVyPjxwYXRoIGQ9Ik0wIDBoMzAwdjMwMEgweiIgZmlsdGVyPSJ1cmwoI2EpIiBvcGFjaXR5PSIuMDUiLz48L3N2Zz4=')]"></div>
-      </div>
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400&display=swap');
 
-      {/* Decorative Top Border */}
-      <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-[#D42D1F] to-transparent"></div>
+        .ftr {
+          background: #0e0c0a;
+          color: #e4ddd3;
+          font-family: 'Barlow', sans-serif;
+          border-top: 1px solid rgba(228,221,211,0.07);
+          position: relative;
+          overflow: hidden;
+        }
 
-      {/* Hexagon Pattern Background */}
-      <div className="absolute inset-0 opacity-5">
-        <svg width="100%" height="100%">
-          <defs>
-            <pattern id="hexagons" width="50" height="43.4" patternUnits="userSpaceOnUse">
-              <polygon
-                points="24.8,22 37.3,29.2 37.3,43.7 24.8,50.9 12.3,43.7 12.3,29.2"
-                fill="none"
-                stroke="#768948"
-                strokeWidth="0.5"
-              />
-            </pattern>
-          </defs>
-          <rect width="100%" height="100%" fill="url(#hexagons)" />
-        </svg>
-      </div>
+        .ftr-bar {
+          height: 2px;
+          background: linear-gradient(90deg, #c9581f, rgba(201,88,31,0.15) 75%, transparent);
+        }
 
-      <div className="relative max-w-7xl mx-auto px-6 lg:px-8">
-        {/* Main Footer Content */}
-        <motion.div
-          className="pt-16 pb-8"
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
-            {/* Column 1: About & Contact */}
-            <motion.div variants={itemVariants} className="space-y-6">
-              <div>
-                <div className="flex items-center space-x-2 mb-4">
-                  <Shield className="w-8 h-8 text-[#D42D1F]" />
-                  <span className="text-2xl font-bold text-white font-['Rajdhani'] tracking-wider">
-                    I-CELL
-                  </span>
-                </div>
-                <p className="text-sm text-gray-400 leading-relaxed">
-                  Innovation Cell organizing the ultimate defence-themed hackathon. Deploy your skills, build tactical solutions.
-                </p>
-              </div>
+        /* ── core layout: [title | nav] ── */
+        .ftr-main {
+          display: grid;
+          grid-template-columns: 1fr auto;
+          align-items: end;
+          padding: 2.5rem 5vw 0;
+          position: relative;
+          z-index: 1;
+          gap: 2rem;
+        }
 
-              <div className="space-y-3">
-                <h4 className="text-xs font-semibold text-[#768948] uppercase tracking-wider mb-3">
-                  Mission Control
-                </h4>
-                {contactInfo.map((item, index) => (
-                  <a
-                    key={index}
-                    href={item.href}
-                    className="flex items-center space-x-3 text-sm hover:text-[#D42D1F] transition-colors group"
-                  >
-                    <item.icon className="w-4 h-4 text-gray-500 group-hover:text-[#D42D1F] transition-colors" />
-                    <span>{item.text}</span>
-                  </a>
-                ))}
-              </div>
-            </motion.div>
+        /* title */
+        .ftr-title {
+          line-height: 1;
+          overflow: hidden;
+        }
 
-            {/* Column 2: Quick Links */}
-            <motion.div variants={itemVariants} className="space-y-6">
-              <h4 className="text-xs font-semibold text-[#768948] uppercase tracking-wider">
-                Quick Access
-              </h4>
-              <ul className="space-y-3">
-                {quickLinks.map((link, index) => (
-                  <li key={index}>
-                    <a
-                      href={link.href}
-                      className="text-sm hover:text-[#D42D1F] transition-colors flex items-center group"
-                    >
-                      <span className="w-0 h-[1px] bg-[#D42D1F] group-hover:w-4 transition-all duration-300 mr-0 group-hover:mr-2"></span>
-                      {link.name}
-                    </a>
-                  </li>
-                ))}
-              </ul>
-            </motion.div>
+        .ftr-word {
+          display: block;
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: clamp(4rem, 10.5vw, 10.5rem);
+          line-height: 0.88;
+          transform: translateY(65px);
+          opacity: 0;
+          transition:
+            transform 0.82s cubic-bezier(0.16, 1, 0.3, 1),
+            opacity   0.82s cubic-bezier(0.16, 1, 0.3, 1);
+          will-change: transform, opacity;
+        }
 
-            {/* Column 3: Hackathon Info */}
-            <motion.div variants={itemVariants} className="space-y-6">
-              <h4 className="text-xs font-semibold text-[#768948] uppercase tracking-wider">
-                Mission Brief
-              </h4>
-              <div className="space-y-4">
-                <div className="flex items-start space-x-3">
-                  <Code className="w-5 h-5 text-[#D42D1F] mt-1" />
-                  <div>
-                    <p className="text-sm font-semibold text-white">Software Track</p>
-                    <p className="text-xs text-gray-400">AI, Security, Optimization</p>
-                  </div>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <Cpu className="w-5 h-5 text-[#D42D1F] mt-1" />
-                  <div>
-                    <p className="text-sm font-semibold text-white">Hardware Track</p>
-                    <p className="text-xs text-gray-400">IoT, Robotics, Sensors</p>
-                  </div>
-                </div>
-                <div className="pt-4 border-t border-gray-700">
-                  <p className="text-xs text-gray-400 mb-2">Duration</p>
-                  <p className="text-lg font-bold text-white font-['Rajdhani']">48 HOURS</p>
-                </div>
-              </div>
-            </motion.div>
+        .ftr-word:first-child {
+          color: transparent;
+          -webkit-text-stroke: 1.5px rgba(228,221,211,0.2);
+          transition-delay: 0s;
+        }
 
-            {/* Column 4: Newsletter */}
-            <motion.div variants={itemVariants} className="space-y-6">
-              <div>
-                <h4 className="text-xs font-semibold text-[#768948] uppercase tracking-wider mb-2">
-                  Stay Briefed
-                </h4>
-                <p className="text-sm text-gray-400">
-                  Get tactical updates on hackathon announcements.
-                </p>
-              </div>
+        .ftr-word:last-child {
+          color: #e4ddd3;
+          transition-delay: 0.1s;
+        }
 
-              <form onSubmit={handleSubscribe} className="space-y-3">
-                <div className="relative group">
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="your.email@domain.com"
-                    className="w-full px-4 py-3 bg-[#0A0A0A] border border-gray-700 text-white text-sm focus:outline-none focus:border-[#D42D1F] transition-colors font-['JetBrains_Mono'] placeholder-gray-600"
-                    style={{
-                      clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%)',
-                    }}
-                  />
-                  <div className="absolute top-0 right-0 w-2 h-2 bg-[#D42D1F] opacity-0 group-focus-within:opacity-100 transition-opacity"></div>
-                </div>
+        .ftr-visible .ftr-word {
+          transform: translateY(0);
+          opacity: 1;
+        }
 
-                <button
-                  type="submit"
-                  disabled={isSubscribed}
-                  className="w-full px-4 py-3 bg-[#D42D1F] text-white font-semibold text-sm uppercase tracking-wider hover:bg-[#B02418] transition-all flex items-center justify-center space-x-2 group disabled:opacity-50 disabled:cursor-not-allowed"
-                  style={{
-                    clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%)',
-                  }}
+        /* nav */
+        .ftr-nav {
+          display: flex;
+          flex-direction: column;
+          align-items: flex-end;
+          padding-bottom: 0.5rem;
+          border-left: 1px solid rgba(228,221,211,0.07);
+          padding-left: 2rem;
+          min-width: 120px;
+        }
+
+        .ftr-nav a {
+          font-family: 'Barlow Condensed', sans-serif;
+          font-size: 0.75rem;
+          font-weight: 600;
+          letter-spacing: 0.13em;
+          text-transform: uppercase;
+          color: rgba(228,221,211,0.4);
+          text-decoration: none;
+          padding: 0.48rem 0;
+          width: 100%;
+          text-align: right;
+          border-bottom: 1px solid rgba(228,221,211,0.05);
+          transition: color 0.16s ease;
+          position: relative;
+        }
+
+        .ftr-nav a:first-child {
+          border-top: 1px solid rgba(228,221,211,0.05);
+        }
+
+        .ftr-nav a:hover {
+          color: #e4ddd3;
+        }
+
+        /* ── bottom strip ── */
+        .ftr-bottom {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          flex-wrap: wrap;
+          gap: 0.75rem;
+          padding: 1rem 5vw;
+          border-top: 1px solid rgba(228,221,211,0.07);
+          margin-top: 1.2rem;
+          position: relative;
+          z-index: 1;
+        }
+
+        .ftr-meta {
+          display: flex;
+          flex-direction: column;
+          gap: 0.15rem;
+        }
+
+        .ftr-org {
+          font-family: 'Barlow Condensed', sans-serif;
+          font-size: 0.65rem;
+          font-weight: 600;
+          letter-spacing: 0.18em;
+          text-transform: uppercase;
+          color: rgba(228,221,211,0.28);
+        }
+
+        .ftr-copy {
+          font-family: 'Barlow Condensed', sans-serif;
+          font-size: 0.62rem;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: rgba(228,221,211,0.18);
+        }
+
+        .ftr-right {
+          display: flex;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        /* icon-only social row */
+        .ftr-socials {
+          display: flex;
+          align-items: center;
+          gap: 0.4rem;
+        }
+
+        .ftr-social {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          width: 32px;
+          height: 32px;
+          border: 1px solid rgba(228,221,211,0.09);
+          border-radius: 3px;
+          color: rgba(228,221,211,0.35);
+          text-decoration: none;
+          transition: color 0.16s, border-color 0.16s, transform 0.16s;
+        }
+
+        .ftr-social:hover {
+          color: #c9581f;
+          border-color: rgba(201,88,31,0.35);
+          transform: translateY(-2px);
+        }
+
+        .ftr-vline {
+          width: 1px;
+          height: 16px;
+          background: rgba(228,221,211,0.09);
+        }
+
+        .ftr-links {
+          display: flex;
+          gap: 0.9rem;
+        }
+
+        .ftr-links a {
+          font-family: 'Barlow Condensed', sans-serif;
+          font-size: 0.63rem;
+          letter-spacing: 0.1em;
+          text-transform: uppercase;
+          color: rgba(228,221,211,0.22);
+          text-decoration: none;
+          transition: color 0.16s;
+        }
+
+        .ftr-links a:hover {
+          color: rgba(228,221,211,0.6);
+        }
+
+        /* mobile */
+        @media (max-width: 600px) {
+          .ftr-main { grid-template-columns: 1fr; gap: 1.5rem; }
+          .ftr-nav {
+            align-items: flex-start;
+            border-left: none;
+            border-top: 1px solid rgba(228,221,211,0.07);
+            padding-left: 0;
+            padding-top: 1rem;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+          }
+          .ftr-nav a { text-align: left; }
+          .ftr-bottom { flex-direction: column; align-items: flex-start; }
+        }
+      `}</style>
+
+      <footer className="ftr">
+        <div className="ftr-bar" />
+
+        {/* title + nav side by side */}
+        <div className="ftr-main">
+          <div className="ftr-title" ref={titleRef}>
+            <span className="ftr-word">Safe</span>
+            <span className="ftr-word">Hackathon</span>
+          </div>
+
+          <nav className="ftr-nav" aria-label="Footer navigation">
+            {navLinks.map((l) => (
+              <Link key={l.label} href={l.href}>{l.label}</Link>
+            ))}
+          </nav>
+        </div>
+
+        {/* bottom bar */}
+        <div className="ftr-bottom">
+          <div className="ftr-meta">
+            <span className="ftr-org">Innovation Cell · Pillai College of Engineering</span>
+            <span className="ftr-copy">
+              © {new Date().getFullYear()} Safe Hackathon — All rights reserved
+            </span>
+          </div>
+
+          <div className="ftr-right">
+            <div className="ftr-socials">
+              {socialLinks.map((s) => (
+                <a
+                  key={s.label}
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="ftr-social"
+                  aria-label={s.label}
                 >
-                  {isSubscribed ? (
-                    <span>✓ SUBSCRIBED</span>
-                  ) : (
-                    <>
-                      <span>Deploy</span>
-                      <Send className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                    </>
-                  )}
-                </button>
-              </form>
-
-              {/* Social Links */}
-              <div className="pt-4">
-                <h4 className="text-xs font-semibold text-[#768948] uppercase tracking-wider mb-3">
-                  Connect
-                </h4>
-                <div className="flex space-x-3">
-                  {socialLinks.map((social, index) => (
-                    <a
-                      key={index}
-                      href={social.href}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      aria-label={social.label}
-                      className="w-10 h-10 border border-gray-700 flex items-center justify-center hover:border-[#D42D1F] hover:bg-[#D42D1F]/10 transition-all group"
-                      style={{
-                        clipPath: 'polygon(0 0, calc(100% - 6px) 0, 100% 6px, 100% 100%, 0 100%)',
-                      }}
-                    >
-                      <social.icon className="w-4 h-4 text-gray-400 group-hover:text-[#D42D1F] transition-colors" />
-                    </a>
-                  ))}
-                </div>
-              </div>
-            </motion.div>
-          </div>
-        </motion.div>
-
-        {/* Bottom Bar */}
-        <motion.div
-          className="border-t border-gray-800 py-6"
-          initial={{ opacity: 0 }}
-          whileInView={{ opacity: 1 }}
-          viewport={{ once: true }}
-          transition={{ delay: 0.5 }}
-        >
-          <div className="flex flex-col md:flex-row justify-between items-center space-y-4 md:space-y-0">
-            <div className="flex flex-col md:flex-row items-center space-y-2 md:space-y-0 md:space-x-6 text-sm text-gray-500">
-              <p>&copy; 2026 I-Cell. All rights reserved.</p>
-              <div className="flex items-center space-x-4">
-                <a href="#privacy" className="hover:text-[#D42D1F] transition-colors">
-                  Privacy Policy
+                  {s.icon}
                 </a>
-                <span>•</span>
-                <a href="#terms" className="hover:text-[#D42D1F] transition-colors">
-                  Terms of Service
-                </a>
-              </div>
+              ))}
             </div>
 
-            <div className="flex items-center space-x-3 text-sm text-gray-500">
-              <span className="font-['JetBrains_Mono']">Built with</span>
-              <span className="text-[#D42D1F] animate-pulse">❤</span>
-              <span className="font-['JetBrains_Mono']">by I-Cell Team</span>
+            <div className="ftr-vline" />
+
+            <div className="ftr-links">
+              <Link href="/privacy-policy">Privacy</Link>
+              <Link href="/code-of-conduct">Conduct</Link>
             </div>
           </div>
-        </motion.div>
-      </div>
-
-      {/* Scroll to Top Button */}
-      <motion.button
-        onClick={scrollToTop}
-        className="fixed bottom-8 right-8 w-12 h-12 bg-[#D42D1F] text-white flex items-center justify-center hover:bg-[#B02418] transition-all shadow-lg group z-50"
-        style={{
-          clipPath: 'polygon(0 0, calc(100% - 8px) 0, 100% 8px, 100% 100%, 0 100%)',
-        }}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        whileHover={{ y: -4 }}
-        whileTap={{ scale: 0.95 }}
-      >
-        <ChevronUp className="w-6 h-6 group-hover:-translate-y-1 transition-transform" />
-      </motion.button>
-
-      {/* Decorative Bottom Glow */}
-      <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-1/2 h-px bg-gradient-to-r from-transparent via-[#D42D1F]/50 to-transparent"></div>
-    </footer>
+        </div>
+      </footer>
+    </>
   );
-};
-
-export default Footer;
+}

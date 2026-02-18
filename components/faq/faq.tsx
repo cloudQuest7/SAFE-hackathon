@@ -1,241 +1,224 @@
 "use client";
 
-import React, { useState } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { useState, useRef, useEffect } from "react";
+import { FAQ_DATA, FAQItem } from "@/constants/faqData"; 
 
-type FAQItem = {
-	id: string;
-	q: string;
-	a: React.ReactNode;
-};
+function FAQAnswer({ text, open }: { text: string; open: boolean }) {
+  const inner = useRef<HTMLDivElement>(null);
+  const [h, setH] = useState(0);
 
-const defaultItems: FAQItem[] = [
-	{
-		id: "faq-1",
-		q: "What is I-CELL and who can join?",
-		a: (
-			<p>
-				I-CELL is a three-day interdisciplinary hackathon focused on hardware
-				and software solutions. Students, professionals, and hobbyists are
-				welcome — teams of up to 5 people may participate.
-			</p>
-		),
-	},
-	{
-		id: "faq-2",
-		q: "Do I need prior hardware experience?",
-		a: (
-			<p>
-				No — we welcome all skill levels. Hardware and software tracks are
-				available and mentors will be on-site to help with prototyping.
-			</p>
-		),
-	},
-	{
-		id: "faq-3",
-		q: "How do you judge projects?",
-		a: (
-			<p>
-				Projects are evaluated on impact, technical execution, originality,
-				and feasibility. See the `Prizes` section for category-specific
-				criteria.
-			</p>
-		),
-	},
-	{
-		id: "faq-4",
-		q: "Can I register as an individual?",
-		a: (
-			<p>
-				Yes — individuals can register and will be placed on a team during
-				registration if they do not have a full team.
-			</p>
-		),
-	},
-  {
-    id: "faq-5",
-    q: "What should I bring?",
-    a: (
-      <p>
-        Bring your laptop, any tools you might need, and your creativity.
-        We provide power, WiFi, and mentorship. Meals and refreshments
-        are complimentary for all participants.
-      </p>
-    ),
-  },
-  {
-    id: "faq-6",
-    q: "Is there a submission deadline?",
-    a: (
-      <p>
-        All projects must be submitted by 17:00 on March 17th. Late
-        submissions will not be accepted. Start early to avoid last-minute
-        rush.
-      </p>
-    ),
-  },
-];
-
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.08,
-      delayChildren: 0.1,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.6, ease: [0.22, 1, 0.36, 1] },
-  },
-};
-
-export default function FAQ({ items = defaultItems }: { items?: FAQItem[] }) {
-  const [openId, setOpenId] = useState<string | null>(null);
-
-  const toggle = (id: string) => setOpenId(openId === id ? null : id);
+  useEffect(() => {
+    if (inner.current) setH(inner.current.scrollHeight);
+  }, [text]);
 
   return (
-    <section id="faq" className="w-full py-24 px-6 md:px-12">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7 }}
-          className="mb-20 text-center"
-        >
-          <h2 className="text-5xl md:text-7xl font-white tracking-tighter mb-4">
-            FAQ
-          </h2>
-          <p className="text-lg text-gray-400 mx-auto">
-            Everything you need to know about I-CELL. Cant find what you are looking for?{" "}
-            <a href="mailto:info@i-cell.hackathon" className="text-[#FFB800] hover:text-[#D42D1F] transition-colors">
-              Get in touch
-            </a>
-            .
-          </p>
-        </motion.div>
-
-        {/* FAQ Grid - Single column centered */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          whileInView="visible"
-          viewport={{ once: true }}
-          className="grid gap-6"
-        >
-          {items.map((item, idx) => {
-            const isOpen = openId === item.id;
-            return (
-              <motion.div
-                key={item.id}
-                variants={itemVariants}
-                className="group"
-              >
-                <button
-                  aria-expanded={isOpen}
-                  aria-controls={`${item.id}-panel`}
-                  onClick={() => toggle(item.id)}
-                  className="w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#FFB800] p-0 rounded"
-                >
-                  <div className="flex gap-6 items-start">
-                    {/* Number Badge with rotation animation */}
-                    <div className="flex-shrink-0 pt-1">
-                      <motion.div
-                        animate={{
-                          rotate: isOpen ? 90 : 0,
-                          color: isOpen ? "#FFB800" : "#607744",
-                        }}
-                        transition={{ duration: 0.35 }}
-                        className="text-4xl md:text-5xl font-black"
-                      >
-                        +
-                      </motion.div>
-                    </div>
-
-                    {/* Content */}
-                    <div className="flex-1">
-                      <motion.h3
-                        animate={{
-                          color: isOpen ? "#FFB800" : "#FFFFFF",
-                        }}
-                        transition={{ duration: 0.3 }}
-                        className="text-xl md:text-2xl font-bold tracking-wide leading-tight"
-                      >
-                        {item.q}
-                      </motion.h3>
-                    </div>
-                  </div>
-
-                  {/* Underline */}
-                  <motion.div
-                    className="h-[2px] bg-gradient-to-r from-[#B39C4D] to-[#607744] mt-4"
-                    animate={{
-                      scaleX: isOpen ? 1 : 0,
-                      opacity: isOpen ? 1 : 0.5,
-                    }}
-                    transition={{ duration: 0.4 }}
-                    style={{ transformOrigin: "left" }}
-                  />
-                </button>
-
-                {/* Answer Panel */}
-                <AnimatePresence mode="wait">
-                  {isOpen && (
-                    <motion.div
-                      id={`${item.id}-panel`}
-                      key={`${item.id}-panel`}
-                      initial={{ opacity: 0, height: 0, marginTop: 0 }}
-                      animate={{ opacity: 1, height: "auto", marginTop: 24 }}
-                      exit={{ opacity: 0, height: 0, marginTop: 0 }}
-                      transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-                      className="text-gray-300 ml-16 text-base leading-relaxed"
-                    >
-                      <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ delay: 0.15 }}
-                      >
-                        {typeof item.a === "string" ? <p>{item.a}</p> : item.a}
-                      </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </motion.div>
-            );
-          })}
-        </motion.div>
-
-        {/* CTA Footer */}
-        <motion.div
-          initial={{ opacity: 0, y: 40 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.7, delay: 0.2 }}
-          className="mt-24 pt-12 border-t border-gray-800/40 text-center md:text-left"
-        >
-          <p className="text-gray-400 mb-4">Still have questions?</p>
-          <motion.a
-            href="mailto:info@i-cell.hackathon"
-            whileHover={{ x: 6 }}
-            className="inline-flex items-center gap-2 text-[#FFB800] font-bold text-lg hover:text-[#D42D1F] transition-colors"
-          >
-            Contact the team
-            <motion.span animate={{ x: [0, 4, 0] }} transition={{ duration: 1.5, repeat: Infinity }}>
-              →
-            </motion.span>
-          </motion.a>
-        </motion.div>
+    <div
+      style={{
+        maxHeight: open ? h : 0,
+        opacity: open ? 1 : 0,
+        overflow: "hidden",
+        transition:
+          "max-height 0.52s cubic-bezier(0.16,1,0.3,1), opacity 0.35s ease",
+      }}
+    >
+      <div ref={inner} className="px-4 pt-2 pb-5">
+        <p className="text-[#555] text-[13.5px] leading-relaxed font-normal">
+          {text}
+        </p>
       </div>
-    </section>
+    </div>
+  );
+}
+
+// ─── Single FAQ cell ──────────────────────────────────────────────────────────
+function FAQCell({
+  item,
+  isOpen,
+  onToggle,
+}: {
+  item: FAQItem;
+  isOpen: boolean;
+  onToggle: () => void;
+}) {
+  return (
+    <div
+      onClick={onToggle}
+      role="button"
+      aria-expanded={isOpen}
+      className={`
+        relative cursor-pointer group
+        border-b border-[#d0d0d0]
+        transition-colors duration-200
+        ${isOpen ? "bg-white" : "hover:bg-[#f0f0f0]"}
+      `}
+    >
+      <div className="flex items-center justify-between gap-4 px-4 py-5">
+        <span
+          className="text-base font-bold uppercase tracking-[0.06em] leading-tight text-[#111] flex-1"
+          style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700 }}
+        >
+          {item.question}
+        </span>
+
+        <div
+          className="shrink-0 text-[#111] leading-none"
+          style={{
+            transform: isOpen ? "rotate(45deg)" : "rotate(0deg)",
+            transition: "transform 0.38s cubic-bezier(0.16,1,0.3,1)",
+            fontWeight: 300,
+            fontSize: "22px",
+            lineHeight: 1,
+          }}
+        >
+          +
+        </div>
+      </div>
+
+      <FAQAnswer text={item.answer} open={isOpen} />
+    </div>
+  );
+}
+
+// ─── Marquee ─────────────────────────────────────────────────────────────────
+function Marquee() {
+  const items: React.ReactNode[] = [];
+  for (let i = 0; i < 10; i++) {
+    items.push(
+      <span
+        key={`t-${i}`}
+        className="text-[#111] shrink-0"
+        style={{
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: "clamp(1rem, 2vw, 2rem)",
+          letterSpacing: "0.02em",
+          lineHeight: 1,
+          marginRight: "0.5rem",
+        }}
+      >
+        YOUR QUESTIONS
+      </span>
+    );
+    items.push(
+      <span
+        key={`ic-${i}`}
+        className="inline-flex items-center justify-center w-10 h-10 rounded-full border-2 border-[#111] mx-6 text-[#111] shrink-0 self-center"
+        style={{ fontSize: "18px", fontWeight: 300 }}
+      >
+        ?
+      </span>
+    );
+  }
+
+  return (
+    <div
+      className="overflow-hidden border-y-2 border-[#111] bg-[#e8e8e8] py-3"
+      style={{ userSelect: "none" }}
+    >
+      <div
+        className="flex items-center whitespace-nowrap"
+        style={{
+          animation: "faq-marquee 40s linear infinite",
+          width: "max-content",
+        }}
+      >
+        {items}
+        {items}
+      </div>
+    </div>
+  );
+}
+
+// ─── Main section ─────────────────────────────────────────────────────────────
+export default function FAQSection() {
+  const [openId, setOpenId] = useState<string | null>(null);
+  const toggle = (id: string) => setOpenId((p) => (p === id ? null : id));
+
+  const col1 = FAQ_DATA.filter((_, i) => i % 3 === 0);
+  const col2 = FAQ_DATA.filter((_, i) => i % 3 === 1);
+  const col3 = FAQ_DATA.filter((_, i) => i % 3 === 2);
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@400;500&display=swap');
+
+        @keyframes faq-marquee {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-50%); }
+        }
+      `}</style>
+
+      <section className="bg-[#e8e8e8] overflow-hidden">
+
+        {/* ── Top asset area — plenty of space for graphics ── */}
+        <div className="px-6 lg:px-10 pt-20 pb-10 min-h-[160px] flex flex-col justify-end">
+          {/* 
+            👆 This space above the heading is intentionally open.
+               Drop in your images, illustrations, or any graphic assets here.
+               Example: <Image src="/soldier.png" ... />
+          */}
+          <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-2">
+            <h2
+              className="text-[#111] leading-none"
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: "clamp(2.4rem, 5.5vw, 5rem)",
+                letterSpacing: "0.03em",
+              }}
+            >
+              Frequently Asked QUESTIONS
+            </h2>
+            <p
+              className="text-[#888] text-[11px] tracking-[0.15em] uppercase pb-1"
+              style={{ fontFamily: "'Barlow Condensed', sans-serif" }}
+            >
+              {FAQ_DATA.length} questions
+            </p>
+          </div>
+        </div>
+
+        {/* ── Marquee ── */}
+        <Marquee />
+
+        {/* ── 3-column FAQ grid ── */}
+        <div className="grid grid-cols-1 lg:grid-cols-3">
+          <div className="border-r-0 lg:border-r border-[#d0d0d0]">
+            {col1.map((item) => (
+              <FAQCell
+                key={item.id}
+                item={item}
+                isOpen={openId === item.id}
+                onToggle={() => toggle(item.id)}
+              />
+            ))}
+          </div>
+
+          <div className="border-r-0 lg:border-r border-[#d0d0d0]">
+            {col2.map((item) => (
+              <FAQCell
+                key={item.id}
+                item={item}
+                isOpen={openId === item.id}
+                onToggle={() => toggle(item.id)}
+              />
+            ))}
+          </div>
+
+          <div>
+            {col3.map((item) => (
+              <FAQCell
+                key={item.id}
+                item={item}
+                isOpen={openId === item.id}
+                onToggle={() => toggle(item.id)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {/* ── Bottom border cap ── */}
+        <div className="border-t-2 border-[#111]" />
+      </section>
+    </>
   );
 }

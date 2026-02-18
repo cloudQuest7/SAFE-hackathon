@@ -21,44 +21,6 @@ const Hero = () => {
       />
       </div>
 
-      {/* Content */}
-      <div className="max-w-3xl relative z-20 text-center">
-      <motion.h1 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8 }}
-        className="text-6xl md:text-8xl font-light font-auralyess text-white mb-8 tracking-tight leading-[0.9]"
-      >
-        S. A. F. E<br />Hackathon
-      </motion.h1>
-      
-      <motion.p 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.2 }}
-        className="text-lg md:text-xl text-gray-500 mb-12 font-light max-w-md mx-auto"
-      >
-        Defence Themed
-      </motion.p>
-      
-      <motion.div 
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.8, delay: 0.4 }}
-        className="flex justify-center"
-      >
-        <motion.button
-        onClick={() => router.push('/login')}
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        className="group relative overflow-hidden border border-white/20 px-10 py-5 rounded-full transition-all duration-300 hover:border-white text-lg"
-        >
-                 
-        {/* Shiny Text */}
-        <ShinyText text="Register Now" className="relative z-10 text-white text-lg font-light" />
-        </motion.button>
-      </motion.div>
-      </div>
     </section>
   );
 };
