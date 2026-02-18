@@ -1,368 +1,419 @@
-'use client';
+"use client";
 
-import React, { useRef, useMemo } from 'react';
-import { Canvas, useFrame } from '@react-three/fiber';
-import { shaderMaterial } from '@react-three/drei';
-import { extend } from '@react-three/fiber';
-import * as THREE from 'three';
-import { motion } from 'framer-motion';
-import { Radio, TrendingUp, Users, Award } from 'lucide-react';
+import { useRef, useEffect } from "react";
+import gsap from "gsap";
+import { useGSAP } from "@gsap/react";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
 
-// Custom Radar Shader Material
-const RadarMaterial = shaderMaterial(
-  {
-    time: 0,
-    color: new THREE.Color(0.46, 0.54, 0.28),
-    accentColor: new THREE.Color(0.83, 0.18, 0.12),
-  },
-  // Vertex Shader
-  `
-    varying vec2 vUv;
-    void main() {
-      vUv = uv;
-      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
-    }
-  `,
-  // Fragment Shader
-  `
-    uniform float time;
-    uniform vec3 color;
-    uniform vec3 accentColor;
-    varying vec2 vUv;
+gsap.registerPlugin(ScrollTrigger);
 
-    void main() {
-      vec2 center = vec2(0.5, 0.5);
-      float dist = distance(vUv, center);
-      
-      // Radar sweep
-      float angle = atan(vUv.y - 0.5, vUv.x - 0.5);
-      float sweep = mod(angle + time * 2.0, 6.28318);
-      float sweepGlow = smoothstep(0.3, 0.0, sweep);
-      
-      // Concentric circles
-      float rings = sin(dist * 30.0 - time * 2.0) * 0.5 + 0.5;
-      rings = smoothstep(0.4, 0.6, rings);
-      
-      // Grid lines
-      float gridX = abs(fract(vUv.x * 20.0) - 0.5) * 2.0;
-      float gridY = abs(fract(vUv.y * 20.0) - 0.5) * 2.0;
-      float grid = min(gridX, gridY);
-      grid = smoothstep(0.9, 1.0, grid);
-      
-      // Combine effects
-      vec3 finalColor = color;
-      finalColor = mix(finalColor, accentColor, sweepGlow * 0.7);
-      finalColor += rings * 0.2;
-      finalColor += grid * 0.15;
-      
-      // Fade at edges
-      float alpha = 1.0 - smoothstep(0.4, 0.5, dist);
-      alpha *= 0.6;
-      
-      gl_FragColor = vec4(finalColor, alpha);
-    }
-  `
-);
+const TICKER_ITEMS = [
+  "HARDWARE", "·", "SOFTWARE", "·", "DEFENSE", "·",
+  "INNOVATION", "·", "BUILD", "·", "BREAK", "·", "DEPLOY", "·",
+];
 
-extend({ RadarMaterial });
-
-// Radar Display Component
-const RadarDisplay = () => {
-  const materialRef = useRef<any>();
-
-  useFrame((state) => {
-    if (materialRef.current) {
-      materialRef.current.time = state.clock.elapsedTime;
-    }
-  });
-
+// ── Split text into char spans ─────────────────────────────────────────────────
+function SplitChars({ text, className }: { text: string; className?: string }) {
   return (
-    <mesh rotation={[-Math.PI / 2, 0, 0]}>
-      <planeGeometry args={[6, 6, 1, 1]} />
-      <radarMaterial ref={materialRef} transparent side={THREE.DoubleSide} />
-    </mesh>
-  );
-};
-
-// 3D Target Markers
-const TargetMarkers = () => {
-  const markersRef = useRef<THREE.Group>(null);
-
-  const markers = useMemo(() => {
-    return Array.from({ length: 12 }, (_, i) => ({
-      position: [
-        Math.cos((i / 12) * Math.PI * 2) * 2,
-        0.1,
-        Math.sin((i / 12) * Math.PI * 2) * 2,
-      ] as [number, number, number],
-      delay: i * 0.1,
-    }));
-  }, []);
-
-  useFrame((state) => {
-    if (markersRef.current) {
-      markersRef.current.rotation.y = state.clock.elapsedTime * 0.1;
-    }
-  });
-
-  return (
-    <group ref={markersRef}>
-      {markers.map((marker, index) => (
-        <mesh key={index} position={marker.position}>
-          <boxGeometry args={[0.1, 0.3, 0.1]} />
-          <meshStandardMaterial
-            color="#D42D1F"
-            emissive="#D42D1F"
-            emissiveIntensity={0.5}
-          />
-        </mesh>
+    <span className={`split-word inline-block overflow-hidden ${className ?? ""}`}>
+      {text.split("").map((ch, i) => (
+        <span key={i} className="char inline-block" style={{ willChange: "transform" }}>
+          {ch === " " ? "\u00A0" : ch}
+        </span>
       ))}
-    </group>
+    </span>
   );
-};
+}
 
-// Typing Animation Hook
-const useTypingEffect = (text: string, speed = 50) => {
-  const [displayText, setDisplayText] = React.useState('');
-
-  React.useEffect(() => {
-    let i = 0;
-    const timer = setInterval(() => {
-      if (i < text.length) {
-        setDisplayText(text.slice(0, i + 1));
-        i++;
-      } else {
-        clearInterval(timer);
-      }
-    }, speed);
-
-    return () => clearInterval(timer);
-  }, [text, speed]);
-
-  return displayText;
-};
-
-// Terminal-style Status Component
-const TerminalStatus = () => {
-  const status1 = useTypingEffect('> SYSTEM STATUS: OPERATIONAL', 30);
-  const status2 = useTypingEffect('> MISSION TYPE: HACKATHON_DEFENCE_2026', 30);
-  const status3 = useTypingEffect('> CLEARANCE LEVEL: CLASSIFIED', 30);
-
+// ── Scrolling ticker belt ──────────────────────────────────────────────────────
+function Ticker() {
+  const repeated = [...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS];
   return (
-    <div className="font-mono text-xs md:text-sm space-y-1 text-[#768948]">
-      <div className="flex items-center space-x-2">
-        <div className="w-2 h-2 bg-[#D42D1F] animate-pulse"></div>
-        <span>{status1}</span>
-      </div>
-      <div className="flex items-center space-x-2 opacity-80">
-        <div className="w-2 h-2 bg-[#768948]"></div>
-        <span>{status2}</span>
-      </div>
-      <div className="flex items-center space-x-2 opacity-60">
-        <div className="w-2 h-2 bg-[#607744]"></div>
-        <span>{status3}</span>
+    <div className="hero-ticker w-full overflow-hidden py-2 border-y border-[#4a7c59]/20 my-1">
+      <div
+        className="flex gap-6 whitespace-nowrap"
+        style={{ animation: "ticker-run 18s linear infinite", width: "max-content" }}
+      >
+        {repeated.map((t, i) => (
+          <span
+            key={i}
+            className={`text-[11px] tracking-[0.25em] shrink-0 ${
+              t === "·" ? "text-[#c9581f]" : "text-[#4a7c59]/70"
+            }`}
+            style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 600 }}
+          >
+            {t}
+          </span>
+        ))}
       </div>
     </div>
   );
-};
+}
 
-// Main Hero Component - Concept 3
-const HeroRadar = () => {
-  return (
-    <section className="relative h-screen w-full overflow-hidden bg-[#0A0A0A]">
-      {/* Scanlines Effect */}
-      <div className="absolute inset-0 bg-[repeating-linear-gradient(0deg,transparent,transparent_2px,rgba(118,137,72,0.03)_2px,rgba(118,137,72,0.03)_4px)] pointer-events-none z-20"></div>
+// ── Main Hero ─────────────────────────────────────────────────────────────────
+export default function Hero() {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const bgRef = useRef<HTMLDivElement>(null);
+  const ghostRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
 
-      {/* 3D Radar Scene */}
-      <div className="absolute inset-0">
-        <Canvas camera={{ position: [0, 4, 0], fov: 60 }}>
-          <ambientLight intensity={0.2} />
-          <pointLight position={[0, 5, 0]} intensity={1} color="#768948" />
-          
-          <RadarDisplay />
-          <TargetMarkers />
-        </Canvas>
-      </div>
+  // ── Entry animation
+  useGSAP(
+    () => {
+      // Respect reduced motion
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-      {/* Top HUD Bar */}
-      <div className="absolute top-0 left-0 right-0 z-30 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-start">
-            <div className="space-y-2">
-              <div className="flex items-center space-x-3">
-                <Radio className="w-5 h-5 text-[#D42D1F] animate-pulse" />
-                <span className="font-mono text-sm text-[#768948] uppercase tracking-wider">
-                  TACTICAL OPERATIONS CENTER
-                </span>
-              </div>
-              <TerminalStatus />
-            </div>
+      const tl = gsap.timeline({ delay: 0.15 });
 
-            <div className="text-right font-mono text-xs text-gray-600">
-              <div>LAT: 19.0760° N</div>
-              <div>LONG: 72.8777° E</div>
-              <div className="text-[#D42D1F] mt-1">LIVE</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      // Badge
+      tl.from(".hero-badge", {
+        y: -24, opacity: 0, duration: 0.7, ease: "power3.out",
+      });
 
-      {/* Main Content */}
-      <div className="relative z-10 h-full flex items-center justify-center px-6">
-        <div className="max-w-6xl mx-auto text-center">
-          {/* Main Title */}
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 1, delay: 0.3 }}
-            className="mb-8"
-          >
-            <div className="inline-block mb-4 px-4 py-1 border border-[#D42D1F]/30 bg-[#D42D1F]/5">
-              <span className="font-mono text-xs text-[#D42D1F] uppercase tracking-[0.3em]">
-                Incoming Transmission
-              </span>
-            </div>
+      // Line 1 chars — "SAFE"
+      tl.from(".hero-l1 .char", {
+        y: 110, opacity: 0, duration: 1, stagger: 0.05, ease: "expo.out",
+      }, "-=0.4");
 
-            <h1 className="text-6xl md:text-8xl lg:text-9xl font-black text-white mb-4 leading-none">
-              <div className="relative inline-block">
-                <span
-                  className="font-['Rajdhani'] uppercase tracking-tight"
-                  style={{
-                    textShadow:
-                      '0 0 20px rgba(212,45,31,0.3), 0 0 40px rgba(212,45,31,0.2), 0 0 60px rgba(212,45,31,0.1)',
-                  }}
-                >
-                  OPERATION
-                </span>
-              </div>
-              <br />
-              <span className="relative inline-block text-[#D42D1F]">
-                <span
-                  className="font-['Rajdhani'] uppercase tracking-tight"
-                  style={{
-                    textShadow:
-                      '0 0 30px rgba(212,45,31,0.5), 0 0 60px rgba(212,45,31,0.3)',
-                  }}
-                >
-                  HACKFORCE
-                </span>
-              </span>
-            </h1>
+      // Ticker
+      tl.from(".hero-ticker", { opacity: 0, duration: 0.4 }, "-=0.5");
 
-            <div className="h-1 w-64 mx-auto bg-gradient-to-r from-transparent via-[#D42D1F] to-transparent"></div>
-          </motion.div>
+      // Line 2 — "HACK" slides from left
+      tl.from(".hero-l2", {
+        x: -80, opacity: 0, duration: 0.9, ease: "expo.out",
+      }, "-=0.55");
 
-          {/* Mission Brief */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 0.6 }}
-            className="mb-12 max-w-3xl mx-auto"
-          >
-            <p className="text-xl md:text-2xl text-gray-400 font-light leading-relaxed mb-6">
-              Deploy elite squads for a 48-hour tactical mission. Develop cutting-edge{' '}
-              <span className="text-white font-medium">hardware</span> and{' '}
-              <span className="text-white font-medium">software</span> solutions for modern defence challenges.
-            </p>
-          </motion.div>
+      // Line 3 chars — "ATHON"
+      tl.from(".hero-l3 .char", {
+        y: 110, opacity: 0, duration: 1, stagger: 0.05, ease: "expo.out",
+      }, "-=0.65");
 
-          {/* Stats Grid */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 0.8 }}
-            className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-12 max-w-4xl mx-auto"
-          >
-            {[
-              { icon: Users, value: '100+', label: 'Operatives' },
-              { icon: TrendingUp, value: '48', label: 'Hours' },
-              { icon: Award, value: '₹50K', label: 'Rewards' },
-              { icon: Radio, value: '2', label: 'Tracks' },
-            ].map((stat, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 0.5, delay: 1 + index * 0.1 }}
-                className="relative group"
-              >
-                <div
-                  className="p-6 bg-[#0A0A0A]/50 border border-[#768948]/20 backdrop-blur-sm hover:border-[#D42D1F]/40 transition-all"
-                  style={{
-                    clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%)',
-                  }}
-                >
-                  <stat.icon className="w-8 h-8 text-[#768948] mx-auto mb-3 group-hover:text-[#D42D1F] transition-colors" />
-                  <div className="text-3xl font-bold text-white font-['Rajdhani'] mb-1">
-                    {stat.value}
-                  </div>
-                  <div className="text-xs uppercase tracking-wider text-gray-500">
-                    {stat.label}
-                  </div>
-                </div>
-                <div className="absolute top-0 right-0 w-3 h-3 bg-[#D42D1F] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              </motion.div>
-            ))}
-          </motion.div>
+      // Bottom strip
+      tl.from(".hero-bottom", {
+        y: 32, opacity: 0, duration: 0.7, ease: "power3.out",
+      }, "-=0.4");
 
-          {/* CTA Buttons */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8, delay: 1.2 }}
-            className="flex flex-col sm:flex-row gap-4 justify-center items-center"
-          >
-            <button
-              className="group relative px-10 py-4 bg-[#D42D1F] text-white font-bold text-base uppercase tracking-[0.2em] overflow-hidden transition-all hover:shadow-[0_0_40px_rgba(212,45,31,0.5),0_0_80px_rgba(212,45,31,0.3)]"
-              style={{
-                clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%)',
-              }}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700"></div>
-              <span className="relative flex items-center space-x-3">
-                <span>Deploy Now</span>
-                <div className="w-2 h-2 bg-white animate-ping"></div>
-              </span>
-            </button>
-
-            <button
-              className="px-10 py-4 border-2 border-[#768948] text-white font-semibold text-base uppercase tracking-[0.2em] hover:bg-[#768948]/10 transition-all"
-              style={{
-                clipPath: 'polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%)',
-              }}
-            >
-              Mission Brief
-            </button>
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Bottom HUD Info */}
-      <div className="absolute bottom-0 left-0 right-0 z-30 p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex justify-between items-end font-mono text-xs text-gray-600">
-            <div>
-              <div className="mb-1 text-[#768948]">MISSION DATE</div>
-              <div className="text-white text-sm">MARCH 15-17, 2026</div>
-            </div>
-            <div className="text-center">
-              <div className="mb-1 text-[#768948]">ORGANIZED BY</div>
-              <div className="text-white text-sm">I-CELL INNOVATION HQ</div>
-            </div>
-            <div className="text-right">
-              <div className="mb-1 text-[#768948]">SECURITY CODE</div>
-              <div className="text-[#D42D1F] text-sm">H4CK-2026-DEF</div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Chromatic Aberration on Edges */}
-      <div className="absolute inset-0 pointer-events-none z-20">
-        <div className="absolute inset-0 shadow-[inset_0_0_100px_rgba(212,45,31,0.1)]"></div>
-      </div>
-    </section>
+      // Scroll indicator
+      tl.from(".hero-scroll-indicator", {
+        opacity: 0, duration: 0.5,
+      }, "-=0.2");
+    },
+    { scope: sectionRef }
   );
-};
 
-export default HeroRadar;
+  // ── Scroll-driven effects
+  useGSAP(
+    () => {
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+      // Parallax background
+      gsap.to(bgRef.current, {
+        yPercent: 28,
+        ease: "none",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "top top",
+          end: "bottom top",
+          scrub: true,
+        },
+      });
+
+      // Content clips away as hero exits
+      gsap.to(contentRef.current, {
+        clipPath: "inset(0 0 100% 0)",
+        ease: "power2.inOut",
+        scrollTrigger: {
+          trigger: sectionRef.current,
+          start: "60% top",
+          end: "bottom top",
+          scrub: 1.2,
+        },
+      });
+    },
+    { scope: sectionRef, dependencies: [] }
+  );
+
+  // ── Magnetic CTA
+  useEffect(() => {
+    const btn = document.querySelector<HTMLElement>(".hero-cta");
+    if (!btn) return;
+    const onMove = (e: MouseEvent) => {
+      const r = btn.getBoundingClientRect();
+      const cx = r.left + r.width / 2;
+      const cy = r.top + r.height / 2;
+      const dx = (e.clientX - cx) * 0.28;
+      const dy = (e.clientY - cy) * 0.28;
+      gsap.to(btn, { x: dx, y: dy, duration: 0.4, ease: "power2.out" });
+    };
+    const onLeave = () => gsap.to(btn, { x: 0, y: 0, duration: 0.5, ease: "elastic.out(1,0.5)" });
+    btn.addEventListener("mousemove", onMove);
+    btn.addEventListener("mouseleave", onLeave);
+    return () => {
+      btn.removeEventListener("mousemove", onMove);
+      btn.removeEventListener("mouseleave", onLeave);
+    };
+  }, []);
+
+  return (
+    <>
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&family=Share+Tech+Mono&display=swap');
+
+        @keyframes ticker-run {
+          0%   { transform: translateX(0); }
+          100% { transform: translateX(-33.333%); }
+        }
+
+        @keyframes badge-pulse {
+          0%, 100% { opacity: 1; transform: scale(1); }
+          50%       { opacity: 0.4; transform: scale(0.7); }
+        }
+
+        @keyframes scroll-drop {
+          0%   { transform: scaleY(0); transform-origin: top; }
+          50%  { transform: scaleY(1); transform-origin: top; }
+          51%  { transform: scaleY(1); transform-origin: bottom; }
+          100% { transform: scaleY(0); transform-origin: bottom; }
+        }
+
+        @keyframes noise-drift {
+          0%   { background-position: 0% 0%; }
+          100% { background-position: 100% 100%; }
+        }
+
+        .hero-bg-noise {
+          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+          opacity: 0.035;
+          animation: noise-drift 8s steps(2) infinite;
+        }
+
+        .hero-scroll-line {
+          animation: scroll-drop 2s ease-in-out infinite;
+        }
+
+        .hero-cta {
+          position: relative;
+          display: inline-flex;
+          align-items: center;
+          gap: 10px;
+          border: 1px solid rgba(201,88,31,0.5);
+          padding: 12px 28px;
+          font-family: 'Barlow Condensed', sans-serif;
+          font-size: 12px;
+          font-weight: 700;
+          letter-spacing: 0.2em;
+          text-transform: uppercase;
+          color: #d8e8d0;
+          transition: background 0.3s, border-color 0.3s, color 0.3s;
+          cursor: pointer;
+        }
+
+        .hero-cta::before {
+          content: '';
+          position: absolute;
+          inset: 0;
+          background: #c9581f;
+          transform: scaleX(0);
+          transform-origin: left;
+          transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
+          z-index: -1;
+        }
+
+        .hero-cta:hover::before { transform: scaleX(1); }
+        .hero-cta:hover { border-color: #c9581f; color: #fff; }
+
+        .hero-hex-grid {
+          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34z' fill='none' stroke='rgba(74,124,89,0.06)' stroke-width='1'/%3E%3Cpath d='M28 100L0 84V50l28-16 28 16v34z' fill='none' stroke='rgba(74,124,89,0.06)' stroke-width='1'/%3E%3C/svg%3E");
+          background-size: 56px 100px;
+        }
+      `}</style>
+
+      <section
+        ref={sectionRef}
+        className="hero-section relative h-dvh w-screen overflow-hidden bg-[#080c08]"
+      >
+        {/* ── Background layer ── */}
+        <div ref={bgRef} className="absolute inset-0 z-0 will-change-transform">
+          {/* Dark gradient base */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#0a0f09] via-[#080c08] to-[#050805]" />
+          {/* Hex grid */}
+          <div className="hero-hex-grid absolute inset-0 opacity-100" />
+          {/* Noise */}
+          <div className="hero-bg-noise absolute inset-0" />
+          {/* Vignette */}
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(4,6,4,0.85)_100%)]" />
+        </div>
+
+        {/* ── Noise overlay ── */}
+        <div className="hero-bg-noise absolute inset-0 z-[3] pointer-events-none" />
+
+        {/* ── Main content ── */}
+        <div
+          ref={contentRef}
+          className="absolute inset-0 z-10 flex flex-col"
+          style={{ clipPath: "inset(0 0 0% 0)" }}
+        >
+          {/* Top badge */}
+          <div className="flex items-center justify-between px-6 lg:px-12 pt-8">
+            <div className="hero-badge flex items-center gap-2.5">
+              <span
+                className="w-1.5 h-1.5 rounded-full bg-[#c9581f]"
+                style={{ animation: "badge-pulse 1.8s ease-in-out infinite", boxShadow: "0 0 6px #c9581f" }}
+              />
+              <span
+                className="text-[#c9581f]/80 text-[9px] tracking-[0.35em] uppercase"
+                style={{ fontFamily: "'Share Tech Mono', monospace" }}
+              >
+                Innovation Cell PCE · Est. 2025
+              </span>
+            </div>
+
+            {/* Top-right section counter */}
+            <span
+              className="hero-badge text-[#3a5238]/50 text-[9px] tracking-[0.2em]"
+              style={{ fontFamily: "'Share Tech Mono', monospace" }}
+            >
+              01 / 04
+            </span>
+          </div>
+
+          {/* Hero typography — center stage */}
+          <div className="flex-1 flex flex-col justify-center px-6 lg:px-12 mt-4">
+
+            {/* LINE 1: SAFE */}
+            <div
+              className="hero-l1 leading-none overflow-hidden"
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: "clamp(5rem, 18vw, 18rem)",
+                letterSpacing: "-0.01em",
+                lineHeight: 0.85,
+              }}
+            >
+              <SplitChars text="SAFE" className="text-[#d8e8d0]" />
+            </div>
+
+            {/* Ticker between lines */}
+            <Ticker />
+
+            {/* LINE 2: HACK — outlined, slides from left */}
+            <div
+              className="hero-l2 leading-none"
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: "clamp(5rem, 18vw, 18rem)",
+                letterSpacing: "-0.01em",
+                lineHeight: 0.85,
+                color: "transparent",
+                WebkitTextStroke: "clamp(1px, 0.15vw, 2px) rgba(74,124,89,0.55)",
+              }}
+            >
+              HACK
+            </div>
+
+            {/* LINE 3: ATHON */}
+            <div
+              className="hero-l3 leading-none"
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: "clamp(5rem, 18vw, 18rem)",
+                letterSpacing: "-0.01em",
+                lineHeight: 0.85,
+              }}
+            >
+              <SplitChars text="ATHON" className="text-[#d8e8d0]" />
+            </div>
+          </div>
+
+          {/* ── Bottom strip ── */}
+          <div className="hero-bottom px-6 lg:px-12 pb-8 pt-6 border-t border-[#2e3a2c]/40">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+
+              {/* Left info */}
+              <div className="flex gap-8">
+                <div>
+                  <p
+                    className="text-[#3a5238]/50 text-[8px] tracking-[0.22em] uppercase mb-0.5"
+                    style={{ fontFamily: "'Share Tech Mono', monospace" }}
+                  >
+                    Location
+                  </p>
+                  <p
+                    className="text-[#7a9a78] text-[12px] tracking-[0.1em] uppercase"
+                    style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 600 }}
+                  >
+                    New Panvel, MH
+                  </p>
+                </div>
+                <div>
+                  <p
+                    className="text-[#3a5238]/50 text-[8px] tracking-[0.22em] uppercase mb-0.5"
+                    style={{ fontFamily: "'Share Tech Mono', monospace" }}
+                  >
+                    Date
+                  </p>
+                  <p
+                    className="text-[#7a9a78] text-[12px] tracking-[0.1em] uppercase"
+                    style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 600 }}
+                  >
+                    [Date TBA]
+                  </p>
+                </div>
+                <div>
+                  <p
+                    className="text-[#3a5238]/50 text-[8px] tracking-[0.22em] uppercase mb-0.5"
+                    style={{ fontFamily: "'Share Tech Mono', monospace" }}
+                  >
+                    Duration
+                  </p>
+                  <p
+                    className="text-[#7a9a78] text-[12px] tracking-[0.1em] uppercase"
+                    style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 600 }}
+                  >
+                    36 Hours
+                  </p>
+                </div>
+              </div>
+
+              {/* Right: CTA */}
+              <div className="flex items-center gap-4">
+                <button className="hero-cta rounded-none">
+                  <span>Register Now</span>
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+                    <path d="M2 10L10 2M10 2H4M10 2V8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+
+                <a
+                  href="#about"
+                  className="text-[#4a6248] hover:text-[#8ab088] text-[11px] tracking-[0.18em] uppercase transition-colors duration-300"
+                  style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 600 }}
+                >
+                  Learn More
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── Scroll indicator ── */}
+        <div className="hero-scroll-indicator absolute bottom-10 right-10 z-20 flex flex-col items-center gap-2 hidden lg:flex">
+          <span
+            className="text-[#3a5238]/40 text-[8px] tracking-[0.28em] uppercase"
+            style={{
+              fontFamily: "'Share Tech Mono', monospace",
+              writingMode: "vertical-rl",
+              textOrientation: "mixed",
+            }}
+          >
+            Scroll to Brief
+          </span>
+          <div className="w-px h-12 bg-[#3a5238]/20 overflow-hidden">
+            <div className="hero-scroll-line w-full h-full bg-[#4a7c59]" />
+          </div>
+        </div>
+
+      </section>
+    </>
+  );
+}

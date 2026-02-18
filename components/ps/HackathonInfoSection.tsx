@@ -54,7 +54,7 @@ export default function HackathonInfoSection() {
             The I-Cell Defence Hackathon is a 48-hour intensive competition where innovators, engineers, and makers come together to build cutting-edge solutions for defence and tactical challenges.
           </p>
           <p className="text-[#A0A0A0] text-lg leading-relaxed">
-            Whether you choose the HARDWARE track or SOFTWARE track, you'll be pushing boundaries, solving real-world problems, and competing for substantial prizes. This is where innovation meets strategy, and where the best hackers deploy their skills on the field.
+            Whether you choose the HARDWARE track or SOFTWARE track, you&apos;ll be pushing boundaries, solving real-world problems, and competing for substantial prizes. This is where innovation meets strategy, and where the best hackers deploy their skills on the field.
           </p>
         </motion.div>
       </div>

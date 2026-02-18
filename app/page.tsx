@@ -1,5 +1,6 @@
 import React from 'react'
 import HeroSection from '@/components/hero/page'
+import Hero from '@/components/hero/HeroSection'
 import AboutSection from '@/components/about/AboutSection'
 import HackathonInfoSection from '@/components/ps/HackathonInfoSection'
 import ProblemsSection from '@/components/ps/ProblemsSection'
@@ -13,6 +14,7 @@ const Landing = () => {
   return (
     <div className="bg-black">
       <HeroSection />
+      <Hero />
       <AboutSection />
       <HackathonInfoSection />
       <ProblemsSection />
