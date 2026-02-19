@@ -215,10 +215,10 @@ const RadarSweep = memo(function RadarSweep() {
       <div
         className="absolute"
         style={{
-          width: '200%',
-          height: '200%',
-          top: '-50%',
-          left: '-50%',
+          width: '300%',
+          height: '300%',
+          top: '-100%',
+          left: '-100%',
           animation: 'radar-sweep 14s linear infinite',
           background: 'conic-gradient(from 0deg, transparent 0deg, transparent 330deg, rgba(34,197,94,0.06) 340deg, rgba(34,197,94,0.12) 355deg, transparent 360deg)',
           transformOrigin: 'center center',
