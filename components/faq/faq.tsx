@@ -30,7 +30,6 @@ function FAQAnswer({ text, open }: { text: string; open: boolean }) {
   );
 }
 
-// ─── Single FAQ cell ──────────────────────────────────────────────────────────
 function FAQCell({
   item,
   isOpen,
@@ -79,7 +78,6 @@ function FAQCell({
   );
 }
 
-// ─── Marquee ─────────────────────────────────────────────────────────────────
 function Marquee() {
   const items: React.ReactNode[] = [];
   for (let i = 0; i < 10; i++) {
@@ -128,7 +126,6 @@ function Marquee() {
   );
 }
 
-// ─── Main section ─────────────────────────────────────────────────────────────
 export default function FAQSection() {
   const [openId, setOpenId] = useState<string | null>(null);
   const toggle = (id: string) => setOpenId((p) => (p === id ? null : id));
