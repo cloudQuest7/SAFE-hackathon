@@ -46,6 +46,7 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} ${rajdhani.variable} ${inter.variable} ${jetbrainsMono.variable} antialiased`}
+        suppressHydrationWarning
       >
      <SideMenu />
         {/* <Navbar /> */}

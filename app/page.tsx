@@ -3,7 +3,7 @@ import HeroSection from '@/components/hero/page'
 import Hero from '@/components/hero/HeroSection'
 import AboutSection from '@/components/about/AboutSection'
 import HackathonInfoSection from '@/components/ps/HackathonInfoSection'
-import ProblemsSection from '@/components/ps/ProblemsSection'
+import TacticalCommandSection from '@/components/ps/TacticalCommandSection'
 import TimelineSection from '@/components/timeline/TimelineSection'
 import PrizesSection from '@/components/prizes/PrizesSection'
 import Faq from '@/components/faq/faq'
@@ -17,7 +17,7 @@ const Landing = () => {
       <Hero />
       <AboutSection />
       <HackathonInfoSection />
-      <ProblemsSection />
+      <TacticalCommandSection />
       <TimelineSection />
       <PrizesSection />
       <Faq />
