@@ -13,7 +13,7 @@ import Footer from '@/components/footer'
 const Landing = () => {
   return (
     <div className="bg-black">
-      <HeroSection />
+      {/* <HeroSection /> */}
       <Hero />
       <AboutSection />
       <HackathonInfoSection />

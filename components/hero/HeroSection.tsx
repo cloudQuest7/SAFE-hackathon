@@ -4,6 +4,7 @@ import { useRef, useEffect } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { StarsBackground } from '@/components/animate-ui/components/backgrounds/stars';
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -50,62 +51,30 @@ function Ticker() {
 
 export default function Hero() {
   const sectionRef = useRef<HTMLDivElement>(null);
-  const bgRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
 
-  useGSAP(
-    () => {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  useGSAP(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const tl = gsap.timeline({ delay: 0.15 });
+    tl.from(".hero-l1 .char", { y: 110, opacity: 0, duration: 1, stagger: 0.05, ease: "expo.out" })
+      .from(".hero-ticker", { opacity: 0, duration: 0.4 }, "-=0.5")
+      .from(".hero-l2", { x: -80, opacity: 0, duration: 0.9, ease: "expo.out" }, "-=0.55")
+      .from(".hero-bottom", { y: 32, opacity: 0, duration: 0.7, ease: "power3.out" }, "-=0.4");
+  }, { scope: sectionRef });
 
-      const tl = gsap.timeline({ delay: 0.15 });
-
-      tl.from(".hero-l1 .char", {
-        y: 110, opacity: 0, duration: 1, stagger: 0.05, ease: "expo.out",
-      });
-
-      tl.from(".hero-ticker", { opacity: 0, duration: 0.4 }, "-=0.5");
-
-      tl.from(".hero-l2", {
-        x: -80, opacity: 0, duration: 0.9, ease: "expo.out",
-      }, "-=0.55");
-
-      // Bottom strip
-      tl.from(".hero-bottom", {
-        y: 32, opacity: 0, duration: 0.7, ease: "power3.out",
-      }, "-=0.4");
-    },
-    { scope: sectionRef }
-  );
-
-  useGSAP(
-    () => {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-
-      // Parallax background
-      gsap.to(bgRef.current, {
-        yPercent: 28,
-        ease: "none",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "top top",
-          end: "bottom top",
-          scrub: true,
-        },
-      });
-
-      gsap.to(contentRef.current, {
-        clipPath: "inset(0 0 100% 0)",
-        ease: "power2.inOut",
-        scrollTrigger: {
-          trigger: sectionRef.current,
-          start: "60% top",
-          end: "bottom top",
-          scrub: 1.2,
-        },
-      });
-    },
-    { scope: sectionRef }
-  );
+  useGSAP(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    gsap.to(contentRef.current, {
+      clipPath: "inset(0 0 100% 0)",
+      ease: "power2.inOut",
+      scrollTrigger: {
+        trigger: sectionRef.current,
+        start: "60% top",
+        end: "bottom top",
+        scrub: 1.2,
+      },
+    });
+  }, { scope: sectionRef });
 
   useEffect(() => {
     const btn = document.querySelector<HTMLElement>(".hero-cta");
@@ -131,106 +100,31 @@ export default function Hero() {
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Share+Tech+Mono&display=swap');
-
-        @keyframes ticker-run {
-          0%   { transform: translateX(0); }
-          100% { transform: translateX(-33.333%); }
-        }
-
-        @keyframes noise-drift {
-          0%   { background-position: 0% 0%; }
-          100% { background-position: 100% 100%; }
-        }
-
-        .hero-bg-noise {
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
-          opacity: 0.035;
-          animation: noise-drift 8s steps(2) infinite;
-        }
-
-        .hero-hex-grid {
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34z' fill='none' stroke='rgba(74,124,89,0.06)' stroke-width='1'/%3E%3Cpath d='M28 100L0 84V50l28-16 28 16v34z' fill='none' stroke='rgba(74,124,89,0.06)' stroke-width='1'/%3E%3C/svg%3E");
-          background-size: 56px 100px;
-        }
-
-        /* CENTER BOTH TITLES */
-        .hero-l1, .hero-l2 {
-          display: flex !important;
-          justify-content: center !important;
-          text-align: center !important;
-        }
-
-        .hero-cta {
-          position: relative;
-          display: inline-flex;
-          align-items: center;
-          gap: 10px;
-          border: 1px solid rgba(201,88,31,0.5);
-          padding: 12px 28px;
-          font-family: 'Barlow Condensed', sans-serif;
-          font-size: 12px;
-          font-weight: 700;
-          letter-spacing: 0.2em;
-          text-transform: uppercase;
-          color: #d8e8d0;
-          transition: all 0.3s ease;
-          cursor: pointer;
-          background: none;
-        }
-
-        .hero-cta::before {
-          content: '';
-          position: absolute;
-          inset: 0;
-          background: #c9581f;
-          transform: scaleX(0);
-          transform-origin: left;
-          transition: transform 0.35s cubic-bezier(0.16,1,0.3,1);
-          z-index: -1;
-        }
-
+        @keyframes ticker-run { 0% { transform: translateX(0); } 100% { transform: translateX(-33.333%); } }
+        .hero-l1, .hero-l2 { display: flex !important; justify-content: center !important; text-align: center !important; }
+        .hero-cta { position: relative; display: inline-flex; align-items: center; gap: 10px; border: 1px solid rgba(201,88,31,0.5); padding: 12px 28px; font-family: 'Barlow Condensed', sans-serif; font-size: 12px; font-weight: 700; letter-spacing: 0.2em; text-transform: uppercase; color: #d8e8d0; transition: all 0.3s ease; cursor: pointer; background: none; }
+        .hero-cta::before { content: ''; position: absolute; inset: 0; background: #c9581f; transform: scaleX(0); transform-origin: left; transition: transform 0.35s cubic-bezier(0.16,1,0.3,1); z-index: -1; }
         .hero-cta:hover::before { transform: scaleX(1); }
         .hero-cta:hover { border-color: #c9581f; color: #fff; }
-
-        .info-label {
-          font-family: 'Share Tech Mono', monospace;
-          font-size: 8px;
-          letter-spacing: 0.22em;
-          text-transform: uppercase;
-          color: rgba(58, 82, 56, 0.5);
-          margin-bottom: 0.125rem;
-        }
-
-        .info-value {
-          font-family: 'Barlow Condensed', sans-serif;
-          font-weight: 600;
-          font-size: 12px;
-          letter-spacing: 0.1em;
-          text-transform: uppercase;
-          color: #7a9a78;
-        }
+        .info-label { font-family: 'Share Tech Mono', monospace; font-size: 8px; letter-spacing: 0.22em; text-transform: uppercase; color: rgba(58,82,56,0.5); margin-bottom: 0.125rem; }
+        .info-value { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #7a9a78; }
       `}</style>
 
-      <section
-        ref={sectionRef}
-        className="hero-section relative h-dvh w-screen overflow-hidden bg-[#080c08]"
-      >
-        <div ref={bgRef} className="absolute inset-0 z-0 will-change-transform">
-          <div className="absolute inset-0 bg-gradient-to-br from-[#0a0f09] via-[#080c08] to-[#050805]" />
-          <div className="hero-hex-grid absolute inset-0 opacity-100" />
-          <div className="hero-bg-noise absolute inset-0" />
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,rgba(4,6,4,0.85)_100%)]" />
-        </div>
+      <section ref={sectionRef} className="relative h-dvh w-screen overflow-hidden bg-black flex items-center justify-center px-6">
+        <StarsBackground 
+          className="absolute inset-0 z-0 pointer-events-none"
+          starColor="#9be3ff"
+          pointerEvents={false}
+          factor={0.08}
+          speed={40}
+        />
 
-        <div className="hero-bg-noise absolute inset-0 z-[3] pointer-events-none" />
-     
         <div
           ref={contentRef}
-          className="absolute inset-0 z-10 flex flex-col"
+          className="absolute inset-0 z-20 flex flex-col"
           style={{ clipPath: "inset(0 0 0% 0)" }}
         >
-          <div className="flex-1 flex flex-col justify-center px-6 lg:px-12 mt-4">
-       
+          <div className="flex-1 flex flex-col justify-center px-6 lg:px-12 mt-4 w-full">
             <div
               className="hero-l1 leading-none overflow-hidden"
               style={{
@@ -240,7 +134,7 @@ export default function Hero() {
                 lineHeight: 0.85,
               }}
             >
-              <SplitChars text="SAFE" className="text-[#d8e8d0]" />
+              <SplitChars text="SAFE" className="text-[#d8e8d0] drop-shadow-2xl" />
             </div>
 
             <Ticker />
@@ -253,16 +147,15 @@ export default function Hero() {
                 letterSpacing: "-0.01em",
                 lineHeight: 0.85,
                 color: "transparent",
-                WebkitTextStroke: "clamp(1px, 0.15vw, 2px) rgba(74,124,89,0.55)",
+                WebkitTextStroke: "clamp(1px, 0.15vw, 2px) rgba(74,124,89,0.6)",
               }}
             >
               HACKATHON
             </div>
           </div>
 
-          <div className="hero-bottom px-6 lg:px-12 pb-8 pt-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              {/* Left info */}
+          <div className="hero-bottom px-6 lg:px-12 pb-8 pt-6 w-full">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-7xl mx-auto">
               <div className="flex gap-8">
                 <div>
                   <p className="info-label">Location</p>
@@ -278,7 +171,6 @@ export default function Hero() {
                 </div>
               </div>
 
-              {/* Right: CTA */}
               <div className="flex items-center gap-4">
                 <button className="hero-cta rounded-none">
                   <span>Register Now</span>
