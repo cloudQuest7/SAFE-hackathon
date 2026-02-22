@@ -39,13 +39,14 @@ function StarLayer({
 }: StarLayerProps) {
   const [boxShadow, setBoxShadow] = React.useState<string>('');
 
-  React.useEffect(() => {
+  React.useLayoutEffect(() => {
     setBoxShadow(generateStars(count, starColor));
   }, [count, starColor]);
 
   return (
     <motion.div
       data-slot="star-layer"
+      suppressHydrationWarning
       animate={{ y: [0, -2000] }}
       transition={transition}
       className={cn('absolute top-0 left-0 w-full h-[2000px]', className)}
