@@ -1,5 +1,5 @@
+
 import React from 'react'
-import HeroSection from '@/components/hero/page'
 import Hero from '@/components/hero/HeroSection'
 import AboutSection from '@/components/about/AboutSection'
 import HackathonInfoSection from '@/components/ps/HackathonInfoSection'
@@ -8,6 +8,7 @@ import TimelineSection from '@/components/timeline/TimelineSection'
 import PrizesSection from '@/components/prizes/PrizesSection'
 import Faq from '@/components/faq/faq'
 import Footer from '@/components/footer'
+import SponsorsSection from '@/components/sponsers/Sponser'
 
 
 const Landing = () => {
@@ -20,6 +21,7 @@ const Landing = () => {
       <TacticalCommandSection />
       <TimelineSection />
       <PrizesSection />
+      <SponsorsSection />
       <Faq />
       <Footer />
     </div>
