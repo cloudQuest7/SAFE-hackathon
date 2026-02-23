@@ -1,7 +1,7 @@
 "use client"
 
 import React, { useRef, useEffect, useState } from 'react'
-import { motion, useScroll, useSpring, useMotionValueEvent, useTransform } from 'framer-motion'
+import { motion, AnimatePresence, useScroll, useSpring, useMotionValueEvent, useTransform } from 'framer-motion'
 
 /* ─── Data ─────────────────────────────────────────────────── */
 interface Checkpoint {
@@ -67,8 +67,99 @@ function getPathPos(
   return { x: pt.x, y: pt.y, angle }
 }
 
+/* ─── Barrel tip world position ───────────────────────────── */
+function getBarrelTipWorld(pos: { x: number; y: number; angle: number }) {
+  // Design coords of muzzle tip inside TankSVG: (37.5, -22.75)
+  // Transforms applied: scale(1.5) → rotate(angle) → outer scale(1.4) → translate(pos.x, pos.y)
+  const rad = pos.angle * Math.PI / 180
+  const lx = 37.5 * 1.5, ly = -22.75 * 1.5
+  const rx = lx * Math.cos(rad) - ly * Math.sin(rad)
+  const ry = lx * Math.sin(rad) + ly * Math.cos(rad)
+  return { x: pos.x + rx * 1.4, y: pos.y + ry * 1.4 }
+}
+
+/* ─── Muzzle Flash (inside TankSVG local design coords) ────── */
+function MuzzleFlash({ firingKey }: { firingKey: number }) {
+  if (firingKey === 0) return null
+  const TIP_X = 37.5, TIP_Y = -22.75
+  const sparks = Array.from({ length: 10 }, (_, i) => ({
+    dx: Math.cos((i / 10) * Math.PI * 2) * 11,
+    dy: Math.sin((i / 10) * Math.PI * 2) * 11,
+  }))
+  return (
+    <g key={firingKey}>
+      {/* Outer bloom burst */}
+      <motion.circle cx={TIP_X} cy={TIP_Y} r={2}
+        fill="#FFD04A"
+        initial={{ r: 2, opacity: 1 }}
+        animate={{ r: 12, opacity: 0 }}
+        transition={{ duration: 0.28, ease: 'easeOut' }}
+      />
+      {/* Inner white-hot core */}
+      <motion.circle cx={TIP_X} cy={TIP_Y} r={1}
+        fill="white"
+        initial={{ r: 1, opacity: 1 }}
+        animate={{ r: 6, opacity: 0 }}
+        transition={{ duration: 0.16, ease: 'easeOut' }}
+      />
+      {/* Radial sparks */}
+      {sparks.map((s, i) => (
+        <motion.line key={i}
+          x1={TIP_X} y1={TIP_Y}
+          stroke={i % 2 === 0 ? '#FFB800' : '#FF6B00'}
+          strokeWidth={i % 3 === 0 ? 1.3 : 0.8}
+          strokeLinecap="round"
+          initial={{ x2: TIP_X, y2: TIP_Y, opacity: 1 }}
+          animate={{ x2: TIP_X + s.dx, y2: TIP_Y + s.dy, opacity: 0 }}
+          transition={{ duration: 0.38, ease: 'easeOut' }}
+        />
+      ))}
+    </g>
+  )
+}
+
+/* ─── World-space: Projectile + smoke trail ─────────────────── */
+function Projectile({
+  startX, startY, angle, firingKey,
+}: { startX: number; startY: number; angle: number; firingKey: number }) {
+  if (firingKey === 0) return null
+  const rad = angle * Math.PI / 180
+  const dist = 60
+  const endX = startX + Math.cos(rad) * dist
+  const endY = startY + Math.sin(rad) * dist
+  return (
+    <g key={firingKey}>
+      {/* Glowing tracer dot */}
+      <motion.circle r={2.2} fill="#FFF0A0"
+        initial={{ cx: startX, cy: startY, opacity: 1, r: 2.2 }}
+        animate={{ cx: endX, cy: endY, opacity: 0, r: 1.2 }}
+        transition={{ duration: 0.20, ease: 'linear' }}
+      />
+      {/* Orange shell casing after-glow */}
+      <motion.circle r={1.4} fill="#FF8C00"
+        initial={{ cx: startX, cy: startY, opacity: 0.7 }}
+        animate={{ cx: endX, cy: endY, opacity: 0 }}
+        transition={{ duration: 0.22, ease: 'linear', delay: 0.01 }}
+      />
+      {/* Fading smoke puffs along the path */}
+      {[0, 1, 2, 3].map((i) => (
+        <motion.circle key={i}
+          fill="rgba(210,200,190,0.35)"
+          initial={{
+            cx: startX + Math.cos(rad) * i * 7,
+            cy: startY + Math.sin(rad) * i * 7,
+            r: 1.2, opacity: 0.5,
+          }}
+          animate={{ r: 5 + i * 1.2, opacity: 0 }}
+          transition={{ duration: 0.55 + i * 0.08, ease: 'easeOut', delay: i * 0.05 }}
+        />
+      ))}
+    </g>
+  )
+}
+
 /* ─── Pixel tank SVG (placeholder — swap out with your asset) ── */
-function TankSVG({ angle }: { angle: number }) {
+function TankSVG({ angle, firingKey, recoilKey }: { angle: number; firingKey: number; recoilKey: number }) {
   return (
     <g transform={`rotate(${angle}) scale(1.5)`}>
       {/* ── Ground shadow ── */}
@@ -113,12 +204,20 @@ function TankSVG({ angle }: { angle: number }) {
       <circle cx="-4" cy="-19" r="4" fill="#1e2c10" stroke="#4a6228" strokeWidth="0.9" />
       <circle cx="-4" cy="-19" r="2.2" fill="#131a0c" />
       <circle cx="-4" cy="-19" r="0.9" fill="#364820" />
-      {/* ── Main gun barrel ── */}
-      <rect x="8" y="-25" width="26" height="5" rx="2" fill="#1e2e10" stroke="#304420" strokeWidth="0.7" />
-      {/* ── Muzzle brake ── */}
-      <rect x="32" y="-26.5" width="5.5" height="7.5" rx="1.2" fill="#141e0a" stroke="#364c20" strokeWidth="0.6" />
-      <line x1="33.2" y1="-24" x2="33.2" y2="-21" stroke="#080c06" strokeWidth="0.8" opacity="0.8" />
-      <line x1="35.5" y1="-24" x2="35.5" y2="-21" stroke="#080c06" strokeWidth="0.8" opacity="0.8" />
+      {/* ── Main gun barrel + muzzle brake (recoils on fire) ── */}
+      <motion.g
+        key={recoilKey}
+        initial={{ x: 0 }}
+        animate={recoilKey > 0 ? { x: [0, -2.8, 0] } : { x: 0 }}
+        transition={{ duration: 0.18, ease: 'easeOut', times: [0, 0.25, 1] }}
+      >
+        <rect x="8" y="-25" width="26" height="5" rx="2" fill="#1e2e10" stroke="#304420" strokeWidth="0.7" />
+        <rect x="32" y="-26.5" width="5.5" height="7.5" rx="1.2" fill="#141e0a" stroke="#364c20" strokeWidth="0.6" />
+        <line x1="33.2" y1="-24" x2="33.2" y2="-21" stroke="#080c06" strokeWidth="0.8" opacity="0.8" />
+        <line x1="35.5" y1="-24" x2="35.5" y2="-21" stroke="#080c06" strokeWidth="0.8" opacity="0.8" />
+        {/* Muzzle flash — rendered in local tank coords */}
+        <MuzzleFlash firingKey={firingKey} />
+      </motion.g>
       {/* ── Stowage box on turret rear ── */}
       <rect x="-16" y="-19" width="13" height="6" rx="1" fill="#243418" stroke="#364c22" strokeWidth="0.5" />
       {/* ── Antenna ── */}
@@ -314,8 +413,12 @@ export default function TimelineSection() {
   const [cpPositions, setCpPositions] = useState<Array<{ x: number; y: number }>>([])
   const [dustKey, setDustKey] = useState(0)
   const [pingKeys, setPingKeys] = useState<Record<number, number>>({})
+  const [firingKey, setFiringKey] = useState(0)
+  const [firePosSnap, setFirePosSnap] = useState({ x: 0, y: 0, angle: 0 })
   const lastTRef = useRef(0)
   const prevActiveRef = useRef<Set<number>>(new Set())
+  const tankPosRef = useRef(tankPos)
+  const missionCompleteRef = useRef(false)
 
   /* Scroll progress — scoped to the tall wrapper so progress = tank position */
   const { scrollYProgress } = useScroll({
@@ -332,6 +435,27 @@ export default function TimelineSection() {
   /* Header fades out once the user starts scrolling into the track */
   const headerOpacity = useTransform(rawProgress, [0, 0.18, 0.30], [1, 1, 0])
   const headerY       = useTransform(rawProgress, [0, 0.30], [0, -28])
+
+  /* Keep refs in sync so interval callbacks see current values */
+  useEffect(() => { tankPosRef.current = tankPos }, [tankPos])
+  useEffect(() => { missionCompleteRef.current = missionComplete }, [missionComplete])
+
+  /* Shared fire logic */
+  const fireShot = React.useCallback(() => {
+    const pos = tankPosRef.current
+    const tip = getBarrelTipWorld(pos)
+    setFirePosSnap({ x: tip.x, y: tip.y, angle: pos.angle })
+    setFiringKey((k) => k + 1)
+  }, [])
+
+  /* Firing interval — fires every 600 ms while tank is moving, stops at mission end */
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (missionCompleteRef.current) return
+      fireShot()
+    }, 600)
+    return () => clearInterval(id)
+  }, [fireShot])
 
   /* Measure path + set initial checkpoint positions on mount */
   useEffect(() => {
@@ -358,7 +482,7 @@ export default function TimelineSection() {
 
     /* ── Camera: pan the SVG viewBox to follow the tank ── */
     if (svgRef.current) {
-      const VW = 420, VH = 325
+      const VW = 620, VH = 480
       // centre tank horizontally, look slightly ahead vertically
       const vx = Math.max(-20, Math.min(900 - VW + 20, pos.x - VW / 2))
       const vy = Math.max(-30, Math.min(700 - VH + 30, pos.y - VH * 0.42))
@@ -447,7 +571,7 @@ export default function TimelineSection() {
           </div>
           <svg
             ref={svgRef}
-            viewBox="-20 -20 420 325"
+            viewBox="-20 -20 620 480"
             className="w-full h-full"
             style={{ display: 'block', overflow: 'visible' }}
             preserveAspectRatio="xMidYMid meet"
@@ -511,16 +635,31 @@ export default function TimelineSection() {
             )}
 
             {/* Tank — outer plain <g> for scroll position, inner motion.g for effects */}
-            <g transform={`translate(${tankPos.x}, ${tankPos.y}) scale(1.4)`}>
+            <g
+              transform={`translate(${tankPos.x}, ${tankPos.y}) scale(1.4)`}
+              onClick={fireShot}
+              style={{ cursor: 'crosshair' }}
+            >
               <motion.g>
                 <motion.g
                   animate={{ y: missionComplete ? 0 : [-0.7, 0.7, -0.7] }}
                   transition={missionComplete ? { duration: 0.2 } : { duration: 0.36, repeat: Infinity, ease: 'easeInOut' }}
                 >
-                  <TankSVG angle={tankPos.angle} />
+                  <TankSVG angle={tankPos.angle} firingKey={firingKey} recoilKey={firingKey} />
                 </motion.g>
               </motion.g>
             </g>
+
+            {/* World-space projectile + smoke trail */}
+            <AnimatePresence>
+              <Projectile
+                key={firingKey}
+                startX={firePosSnap.x}
+                startY={firePosSnap.y}
+                angle={firePosSnap.angle}
+                firingKey={firingKey}
+              />
+            </AnimatePresence>
 
             {/* Checkpoint flags + milestone cards — rendered after tank so they appear on top */}
             {CHECKPOINTS.map((cp, i) => {
