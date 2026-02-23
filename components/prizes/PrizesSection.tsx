@@ -1,446 +1,618 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect, useState } from "react";
 import gsap from "gsap";
 import { useGSAP } from "@gsap/react";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 
 gsap.registerPlugin(ScrollTrigger);
 
-// ── Data ──────────────────────────────────────────────────────────────────────
-const TOTAL_POOL = "₹1,00,000+";
+// ─── PALETTE ─────────────────────────────────────────────────────────────────
+const ORANGE = "#c9581f";
+const OLIVE  = "#556b2f";
+// OLIVE is used for: rank markers, sub-labels, perks numbering, ghost stroke,
+//   inner circle ring, "ON THE BOARD." outline, eyebrow line, corner-box borders
 
-const HERO_PRIZES = [
-  {
-    id: "hw",
-    rank: "01",
-    tag: "HARDWARE",
-    label: "Overall Winner",
-    sublabel: "Hardware Track",
-    amount: "₹[Amount]",
-    perk: "Incubation Support + Mentorship",
-    accent: "#c9581f",
-  },
-  {
-    id: "sw",
-    rank: "02",
-    tag: "SOFTWARE",
-    label: "Overall Winner",
-    sublabel: "Software Track",
-    amount: "₹[Amount]",
-    perk: "Incubation Support + Mentorship",
-    accent: "#4a7c59",
-  },
-];
-
-const TIER_PRIZES = [
-  { id: "track",    rank: "03", tag: "TRACKS",   label: "Track Winners",      amount: "₹[Amount]", note: "Per winning track" },
-  { id: "runner",   rank: "04", tag: "RUNNER-UP", label: "Runner-Up Teams",   amount: "₹[Amount]", note: "Each runner-up team" },
-  { id: "women",    rank: "05", tag: "SPECIAL",   label: "Best All-Women Team", amount: "₹[Amount]", note: "Special recognition" },
-  { id: "freshman", rank: "06", tag: "SPECIAL",   label: "Best Freshman Team", amount: "₹[Amount]", note: "Special recognition" },
-];
-
-// ── Animated counter ──────────────────────────────────────────────────────────
-function AnimatedAmount({ amount, className }: { amount: string; className?: string }) {
-  return <span className={className}>{amount}</span>;
+// ─── MAGNETIC BUTTON ─────────────────────────────────────────────────────────
+function MagneticBtn({ children }: { children: React.ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const onMove = (e: React.MouseEvent) => {
+    const r = ref.current!.getBoundingClientRect();
+    gsap.to(ref.current, {
+      x: (e.clientX - r.left - r.width / 2) * 0.35,
+      y: (e.clientY - r.top  - r.height / 2) * 0.35,
+      duration: 0.5, ease: "power2.out",
+    });
+  };
+  const onLeave = () =>
+    gsap.to(ref.current, { x: 0, y: 0, duration: 0.7, ease: "elastic.out(1,0.5)" });
+  return <div ref={ref} onMouseMove={onMove} onMouseLeave={onLeave}>{children}</div>;
 }
 
-// ── Hero prize card (large) ───────────────────────────────────────────────────
-function HeroPrizeCard({ prize, index }: { prize: typeof HERO_PRIZES[0]; index: number }) {
-  const isLeft = index === 0;
+// ─── SCRAMBLE TEXT ───────────────────────────────────────────────────────────
+function Scramble({ text, trigger }: { text: string; trigger: boolean }) {
+  const [out, setOut] = useState(text);
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789₹#@!%";
+  useEffect(() => {
+    if (!trigger) { setOut(text); return; }
+    let iter = 0;
+    const id = setInterval(() => {
+      setOut(text.split("").map((ch, i) =>
+        i < iter ? ch : ch === " " ? " " : chars[Math.floor(Math.random() * chars.length)]
+      ).join(""));
+      iter += 0.6;
+      if (iter > text.length) clearInterval(id);
+    }, 28);
+    return () => clearInterval(id);
+  }, [trigger, text]);
+  return <>{out}</>;
+}
 
+// ─── TICKER ──────────────────────────────────────────────────────────────────
+const TICKER_ITEMS = ["₹1,00,000","·","FIRST PLACE","·","₹50,000","·","RUNNER UP","·","₹25,000","·","SPECIAL PRIZES","·","₹2,10,000+ POOL","·"];
+
+function Ticker({ dark }: { dark?: boolean }) {
+  const rep = [...TICKER_ITEMS, ...TICKER_ITEMS, ...TICKER_ITEMS];
   return (
     <div
-      className="prize-hero-card group relative overflow-hidden flex flex-col justify-between min-h-[360px] lg:min-h-[440px] cursor-default"
-      style={{
-        background: "rgba(10,14,10,0.85)",
-        border: `1px solid ${prize.accent}22`,
-        backdropFilter: "blur(8px)",
-        willChange: "transform",
-      }}
+      className={`overflow-hidden py-3 ${dark ? "bg-[#c9581f]" : "bg-[#0a0908] border-y border-white/[0.06]"}`}
+      style={{ userSelect: "none" }}
     >
-      {/* Animated background gradient on hover */}
+      <div className="flex whitespace-nowrap" style={{ animation: "p-ticker 24s linear infinite", width: "max-content" }}>
+        {rep.map((t, i) => (
+          <span
+            key={i}
+            className="shrink-0 mx-5 text-[10px] tracking-[0.25em] font-bold"
+            style={{
+              fontFamily: "'Barlow Condensed', sans-serif",
+              // top dark ticker: olive dots, dim cream text
+              // bottom orange ticker: white/30 dots, white text
+              color: t === "·"
+                ? (dark ? "rgba(255,255,255,0.35)" : OLIVE)
+                : (dark ? "rgba(255,255,255,0.9)" : "rgba(228,221,211,0.45)"),
+            }}
+          >{t}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── PRIZE ROW ───────────────────────────────────────────────────────────────
+function PrizeRow({
+  rank, amount, label, sub,
+}: { rank: string; amount: string; label: string; sub: string }) {
+  const [hov, setHov] = useState(false);
+  return (
+    <div
+      className="prize-row relative flex items-center justify-between py-6 cursor-default overflow-hidden"
+      style={{ borderBottom: "1px solid rgba(255,255,255,0.07)" }}
+      onMouseEnter={() => setHov(true)}
+      onMouseLeave={() => setHov(false)}
+    >
+      {/* Hover flood fill */}
       <div
-        className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-700"
+        className="absolute inset-0"
         style={{
-          background: `radial-gradient(ellipse at ${isLeft ? "bottom left" : "bottom right"}, ${prize.accent}18 0%, transparent 70%)`,
+          background: `linear-gradient(105deg, ${ORANGE} 60%, #8b3a12)`,
+          transform: hov ? "scaleX(1)" : "scaleX(0)",
+          transformOrigin: "left",
+          transition: "transform 0.5s cubic-bezier(0.16,1,0.3,1)",
         }}
       />
 
-      {/* Accent top bar */}
-      <div
-        className="absolute top-0 left-0 right-0 h-[2px] origin-left scale-x-0 group-hover:scale-x-100 transition-transform duration-700"
-        style={{ background: prize.accent, transitionTimingFunction: "cubic-bezier(0.16,1,0.3,1)" }}
-      />
+      <div className="relative z-10 flex items-center gap-5 lg:gap-10">
+        {/* RANK — olive when idle, white when hovered */}
+        <span style={{
+          fontFamily: "'Share Tech Mono', monospace",
+          fontSize: "10px", letterSpacing: "0.35em",
+          color: hov ? "rgba(255,255,255,0.55)" : OLIVE,
+          transition: "color 0.3s",
+          minWidth: "2ch",
+        }}>{rank}</span>
 
-      {/* Corner bracket decorations */}
-      <div className="absolute top-3 left-3 w-5 h-5 border-t border-l opacity-20 group-hover:opacity-60 transition-opacity duration-500" style={{ borderColor: prize.accent }} />
-      <div className="absolute bottom-3 right-3 w-5 h-5 border-b border-r opacity-20 group-hover:opacity-60 transition-opacity duration-500" style={{ borderColor: prize.accent }} />
+        <div>
+          <div style={{
+            fontFamily: "'Barlow Condensed', sans-serif",
+            fontSize: "13px", fontWeight: 700,
+            letterSpacing: "0.1em", textTransform: "uppercase",
+            color: hov ? "#fff" : "rgba(228,221,211,0.75)",
+            transition: "color 0.3s",
+          }}>{label}</div>
 
-      {/* Top row */}
-      <div className="relative z-10 flex items-start justify-between p-6 pb-0">
-        <span
-          className="text-[9px] tracking-[0.3em] opacity-30"
-          style={{ fontFamily: "'Share Tech Mono', monospace", color: prize.accent }}
-        >
-          /{prize.rank}
-        </span>
-        <span
-          className="text-[8px] tracking-[0.2em] px-2 py-1 border"
-          style={{
+          {/* Sub-label — olive-tinted when idle */}
+          <div style={{
             fontFamily: "'Share Tech Mono', monospace",
-            color: prize.accent,
-            borderColor: `${prize.accent}50`,
-          }}
-        >
-          {prize.tag}
+            fontSize: "9px", letterSpacing: "0.18em", textTransform: "uppercase",
+            color: hov ? "rgba(255,255,255,0.45)" : `${OLIVE}99`,
+            transition: "color 0.3s",
+          }}>{sub}</div>
+        </div>
+      </div>
+
+      <div className="relative z-10 flex items-center gap-4">
+        <span style={{
+          fontFamily: "'Bebas Neue', sans-serif",
+          fontSize: "clamp(2rem, 3.5vw, 3.2rem)",
+          color: hov ? "#fff" : ORANGE,
+          transition: "color 0.3s",
+          letterSpacing: "0.02em", lineHeight: 1,
+        }}>
+          <Scramble text={amount} trigger={hov} />
         </span>
-      </div>
-
-      {/* Center content */}
-      <div className="relative z-10 px-6 py-4 flex-1 flex flex-col justify-center">
-        <p
-          className="text-[10px] tracking-[0.25em] uppercase mb-1 opacity-50 text-[#d8e8d0]"
-          style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 600 }}
-        >
-          {prize.label}
-        </p>
-        <p
-          className="text-[12px] tracking-[0.15em] uppercase mb-6 opacity-70"
-          style={{ fontFamily: "'Barlow Condensed', sans-serif", color: prize.accent }}
-        >
-          {prize.sublabel}
-        </p>
-
-        {/* Amount — the hero */}
-        <div
-          className="leading-none mb-2"
-          style={{
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: "clamp(3.5rem, 7vw, 6.5rem)",
-            letterSpacing: "0.02em",
-            color: "#e8f0e0",
-          }}
-        >
-          <AnimatedAmount amount={prize.amount} />
-        </div>
-      </div>
-
-      {/* Bottom perk */}
-      <div className="relative z-10 px-6 pb-6">
-        <div className="h-px mb-4 opacity-10" style={{ background: prize.accent }} />
-        <div className="flex items-center gap-2">
-          <div className="w-1 h-1 rounded-full" style={{ background: prize.accent }} />
-          <p
-            className="text-[9px] tracking-[0.15em] uppercase opacity-50 text-[#d8e8d0]"
-            style={{ fontFamily: "'Share Tech Mono', monospace" }}
-          >
-            {prize.perk}
-          </p>
-        </div>
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" style={{
+          opacity: hov ? 1 : 0,
+          transform: hov ? "translateX(0)" : "translateX(-8px)",
+          transition: "all 0.3s ease",
+        }}>
+          <path d="M2 12L12 2M12 2H5M12 2V9" stroke="white" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
       </div>
     </div>
   );
 }
 
-// ── Tier prize row ────────────────────────────────────────────────────────────
-function TierPrizeRow({ prize, index }: { prize: typeof TIER_PRIZES[0]; index: number }) {
-  return (
-    <div
-      className="prize-tier-row group relative flex items-center justify-between gap-4 py-5 px-6 border-b border-[#1e2a1c] cursor-default hover:bg-[#0d160d]/60 transition-colors duration-300 overflow-hidden"
-    >
-      {/* Hover left bar */}
-      <div className="absolute left-0 top-0 bottom-0 w-[2px] bg-[#c9581f] scale-y-0 group-hover:scale-y-100 origin-bottom transition-transform duration-400" style={{ transitionTimingFunction: "cubic-bezier(0.16,1,0.3,1)" }} />
-
-      {/* Left: rank + label */}
-      <div className="flex items-center gap-4 min-w-0">
-        <span
-          className="text-[9px] tracking-[0.25em] text-[#3a5238]/40 shrink-0"
-          style={{ fontFamily: "'Share Tech Mono', monospace" }}
-        >
-          {prize.rank}
-        </span>
-        <span
-          className="text-[8px] tracking-[0.18em] px-2 py-0.5 border border-[#3a5238]/30 text-[#4a7c59]/60 group-hover:border-[#c9581f]/40 group-hover:text-[#c9581f] transition-colors duration-300 shrink-0"
-          style={{ fontFamily: "'Share Tech Mono', monospace" }}
-        >
-          {prize.tag}
-        </span>
-        <span
-          className="text-[13px] tracking-[0.06em] uppercase text-[#6a8a68] group-hover:text-[#c0d4be] transition-colors duration-300 truncate"
-          style={{ fontFamily: "'Barlow Condensed', sans-serif", fontWeight: 700 }}
-        >
-          {prize.label}
-        </span>
-      </div>
-
-      {/* Right: note + amount */}
-      <div className="flex items-center gap-6 shrink-0">
-        <span
-          className="text-[9px] tracking-[0.12em] text-[#3a5238]/40 hidden sm:block"
-          style={{ fontFamily: "'Share Tech Mono', monospace" }}
-        >
-          {prize.note}
-        </span>
-        <span
-          className="text-[1.6rem] text-[#8aaa88] group-hover:text-[#d8e8d0] transition-colors duration-300"
-          style={{ fontFamily: "'Bebas Neue', sans-serif", letterSpacing: "0.04em" }}
-        >
-          {prize.amount}
-        </span>
-      </div>
-    </div>
-  );
-}
-
-// ── Main Section ──────────────────────────────────────────────────────────────
-export default function PrizePoolSection() {
+// ─── MAIN ─────────────────────────────────────────────────────────────────────
+export default function PrizesSection() {
   const sectionRef = useRef<HTMLDivElement>(null);
+  const ghostRef   = useRef<HTMLDivElement>(null);
 
-  useGSAP(
-    () => {
-      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  useGSAP(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 
-      // Section label + header lines reveal
-      gsap.from(".prize-header-line", {
-        yPercent: 110,
-        duration: 1,
-        stagger: 0.12,
-        ease: "expo.out",
-        scrollTrigger: { trigger: ".prize-header", start: "top 80%", toggleActions: "play none none none" },
+    // Ghost parallax — horizontal drift
+    gsap.to(ghostRef.current, {
+      xPercent: -10, ease: "none",
+      scrollTrigger: { trigger: sectionRef.current, start: "top bottom", end: "bottom top", scrub: 1.2 },
+    });
+
+    // Heading lines
+    gsap.from(".ph-line", {
+      yPercent: 110, duration: 1.1, stagger: 0.1, ease: "expo.out",
+      scrollTrigger: { trigger: ".prize-heading", start: "top 82%", once: true },
+    });
+
+    // Prize rows
+    gsap.from(".prize-row", {
+      x: -50, opacity: 0, duration: 0.7, stagger: 0.09, ease: "power3.out",
+      scrollTrigger: { trigger: ".prize-rows", start: "top 85%", once: true },
+    });
+
+    // Right panel
+    gsap.from(".right-panel > *", {
+      y: 36, opacity: 0, duration: 0.8, stagger: 0.1, ease: "expo.out",
+      scrollTrigger: { trigger: ".right-panel", start: "top 80%", once: true },
+    });
+
+    // Pool counter
+    const el = document.querySelector<HTMLElement>(".pool-num");
+    if (el) {
+      ScrollTrigger.create({
+        trigger: el, start: "top 88%", once: true,
+        onEnter() {
+          gsap.fromTo({ v: 0 }, { v: 210000 }, {
+            duration: 2, ease: "power2.out",
+            onUpdate() {
+              el.textContent = "₹" + Math.round((this.targets()[0] as any).v).toLocaleString("en-IN");
+            },
+          });
+        },
       });
+    }
 
-      gsap.from(".prize-badge", {
-        y: -20, opacity: 0, duration: 0.6, ease: "power3.out",
-        scrollTrigger: { trigger: ".prize-header", start: "top 82%", toggleActions: "play none none none" },
-      });
+    // Special tags
+    gsap.from(".s-tag", {
+      scale: 0.75, opacity: 0, duration: 0.45, stagger: 0.06, ease: "back.out(1.5)",
+      scrollTrigger: { trigger: ".s-tags", start: "top 88%", once: true },
+    });
 
-      // Total pool shimmer reveal
-      gsap.from(".prize-total", {
-        opacity: 0, scale: 0.94, duration: 0.9, ease: "expo.out",
-        scrollTrigger: { trigger: ".prize-total", start: "top 85%", toggleActions: "play none none none" },
-      });
+    // Bottom heading
+    gsap.from(".bottom-ph", {
+      yPercent: 110, duration: 1, stagger: 0.08, ease: "expo.out",
+      scrollTrigger: { trigger: ".bottom-heading", start: "top 85%", once: true },
+    });
 
-      // Hero cards — slide up staggered
-      gsap.from(".prize-hero-card", {
-        y: 60, opacity: 0, duration: 1, stagger: 0.15, ease: "expo.out",
-        scrollTrigger: { trigger: ".prize-hero-grid", start: "top 78%", toggleActions: "play none none none" },
-      });
-
-      // Tier rows — slide in from right
-      gsap.from(".prize-tier-row", {
-        x: 40, opacity: 0, duration: 0.65, stagger: 0.08, ease: "power3.out",
-        scrollTrigger: { trigger: ".prize-tier-list", start: "top 80%", toggleActions: "play none none none" },
-      });
-
-      // Divider line draws in
-      gsap.from(".prize-divider", {
-        scaleX: 0, transformOrigin: "left center", duration: 1, ease: "expo.out",
-        scrollTrigger: { trigger: ".prize-divider", start: "top 88%", toggleActions: "play none none none" },
-      });
-    },
-    { scope: sectionRef, dependencies: [] }
-  );
+    // Floating elements
+    gsap.to(".float-badge-1", { y: -14, duration: 2.8, ease: "sine.inOut", yoyo: true, repeat: -1 });
+    gsap.to(".float-badge-2", { y: -10, duration: 3.4, ease: "sine.inOut", yoyo: true, repeat: -1, delay: 0.8 });
+  }, { scope: sectionRef });
 
   return (
     <>
       <style>{`
         @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Barlow+Condensed:wght@400;600;700&family=Barlow:wght@400;500&family=Share+Tech+Mono&display=swap');
 
-        @keyframes prize-shimmer {
-          0%   { background-position: -200% center; }
-          100% { background-position: 200% center; }
+        @keyframes p-ticker  { 0%{transform:translateX(0)} 100%{transform:translateX(-33.333%)} }
+        @keyframes spin-slow { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+        @keyframes cur-blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+        .prizes-wrap { background: #0a0908; }
+
+        /* Ghost text — olive stroke gives it a camo/field-manual texture */
+        .ghost-text {
+          font-family: 'Bebas Neue', sans-serif;
+          font-size: clamp(10rem, 26vw, 28rem);
+          line-height: 0.82;
+          color: transparent;
+          -webkit-text-stroke: 1px ${OLIVE}22;
+          white-space: nowrap;
+          user-select: none;
+          pointer-events: none;
+          letter-spacing: -0.02em;
         }
 
-        .prize-shimmer {
-          background: linear-gradient(90deg, #c9581f 0%, #f5a06a 35%, #c9581f 55%, #f5a06a 100%);
-          background-size: 250% auto;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          animation: prize-shimmer 3.5s linear infinite;
-        }
+        /* Eyebrow cursor */
+        .cur-blink::after { content:'_'; animation: cur-blink 1s step-end infinite; color:${ORANGE}; }
 
-        @keyframes badge-pulse {
-          0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(201,88,31,0.4); }
-          50%       { opacity: 0.6; box-shadow: 0 0 0 6px rgba(201,88,31,0); }
+        /* Corner box — olive-tinted border */
+        .corner-box {
+          position: relative;
+          border: 1px solid ${OLIVE}28;
         }
-
-        .prize-dot { animation: badge-pulse 2s ease-in-out infinite; }
-
-        .prize-hex-bg {
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='56' height='100'%3E%3Cpath d='M28 66L0 50V16L28 0l28 16v34z' fill='none' stroke='rgba(74,124,89,0.045)' stroke-width='1'/%3E%3Cpath d='M28 100L0 84V50l28-16 28 16v34z' fill='none' stroke='rgba(74,124,89,0.045)' stroke-width='1'/%3E%3C/svg%3E");
-          background-size: 56px 100px;
+        .corner-box::before, .corner-box::after {
+          content:''; position:absolute;
+          width:12px; height:12px;
+          border-color:${OLIVE}55; border-style:solid;
         }
+        .corner-box::before { top:-1px; left:-1px;   border-width:2px 0 0 2px; }
+        .corner-box::after  { bottom:-1px; right:-1px; border-width:0 2px 2px 0; }
 
-        @keyframes float-glyph {
-          0%, 100% { transform: translateY(0px) rotate(-12deg); }
-          50%       { transform: translateY(-12px) rotate(-12deg); }
+        /* Special tag */
+        .s-tag {
+          display:inline-flex; align-items:center; gap:8px;
+          border:1px solid rgba(255,255,255,0.08);
+          padding:9px 16px; white-space:nowrap; cursor:default;
+          transition: border-color .22s, background .22s;
         }
-        .prize-float { animation: float-glyph 6s ease-in-out infinite; }
+        /* alternate odd=orange, even=olive on hover */
+        .s-tag:nth-child(odd):hover  { border-color:${ORANGE}; background:${ORANGE}10; }
+        .s-tag:nth-child(even):hover { border-color:${OLIVE};  background:${OLIVE}18; }
+
+        .s-tag .s-label {
+          font-family:'Barlow Condensed',sans-serif; font-size:11px;
+          font-weight:700; letter-spacing:0.15em; text-transform:uppercase;
+          color:rgba(255,255,255,0.45); transition:color .22s;
+        }
+        .s-tag:hover .s-label { color:#fff; }
+        .s-tag .s-amt {
+          font-family:'Bebas Neue',sans-serif; font-size:1.1rem;
+          letter-spacing:0.05em; color:${ORANGE};
+        }
+        /* Even tags: amount in olive */
+        .s-tag:nth-child(even) .s-amt { color:${OLIVE}; filter:brightness(1.4); }
+
+        /* CTA button */
+        .prize-reg-btn {
+          position:relative; overflow:hidden;
+          display:inline-flex; align-items:center; gap:14px;
+          background:${ORANGE}; color:#fff; border:none;
+          padding:18px 44px;
+          font-family:'Bebas Neue',sans-serif;
+          font-size:1.5rem; letter-spacing:0.1em; cursor:pointer;
+          clip-path:polygon(0 0,calc(100% - 12px) 0,100% 12px,100% 100%,12px 100%,0 calc(100% - 12px));
+        }
+        .prize-reg-btn::after {
+          content:''; position:absolute; inset:0;
+          background:#fff; transform:translateY(105%);
+          transition:transform .42s cubic-bezier(0.16,1,0.3,1);
+        }
+        .prize-reg-btn:hover::after { transform:translateY(0); }
+        .prize-reg-btn:hover { color:${ORANGE}; }
+        .prize-reg-btn > * { position:relative; z-index:1; }
+
+        .spin-svg { animation:spin-slow 14s linear infinite; }
       `}</style>
 
-      <section
-        ref={sectionRef}
-        className="relative bg-[#080c08] overflow-hidden py-24 lg:py-32"
-      >
-        {/* Hex grid BG */}
-        <div className="prize-hex-bg absolute inset-0 z-0 opacity-100" />
+      <section ref={sectionRef} id="prizes" className="prizes-wrap relative overflow-hidden">
 
-        {/* Radial glow center */}
-        <div className="absolute inset-0 z-0 bg-[radial-gradient(ellipse_60%_50%_at_50%_60%,rgba(74,124,89,0.06)_0%,transparent_100%)]" />
+        {/* ── TOP TICKER ─────────────────────────────────────────── */}
+        <Ticker />
 
-        {/* Ghost background text */}
-        <div
-          className="prize-float absolute -right-12 top-8 select-none pointer-events-none z-0"
-          style={{
-            fontFamily: "'Bebas Neue', sans-serif",
-            fontSize: "clamp(10rem, 30vw, 32rem)",
-            lineHeight: 0.8,
-            color: "transparent",
-            WebkitTextStroke: "1px rgba(74,124,89,0.04)",
-            letterSpacing: "-0.02em",
-          }}
-        >
-          WIN
-        </div>
+        {/* ── HERO BLOCK ─────────────────────────────────────────── */}
+        <div className="relative overflow-hidden min-h-[50vh] flex items-center">
+          {/* Ghost bg — olive-stroked camo feel */}
+          <div ref={ghostRef} className="ghost-text absolute top-[-10%] left-[-3%]" aria-hidden>
+            PRIZES PRIZES
+          </div>
 
-        <div className="relative z-10 max-w-6xl mx-auto px-6 lg:px-12">
-
-          {/* ── Header ── */}
-          <div className="prize-header mb-16">
-
-            {/* Badge */}
-            <div className="prize-badge flex items-center gap-3 mb-6">
-              <div
-                className="prize-dot w-1.5 h-1.5 rounded-full bg-[#c9581f]"
-              />
+          <div className="relative z-10 w-full px-6 lg:px-12 max-w-screen-2xl mx-auto py-16 lg:py-24">
+            {/* Eyebrow — olive accent line, orange text */}
+            <div className="flex items-center gap-3 mb-8">
+              <div className="h-px w-6 flex-shrink-0" style={{ background: OLIVE }} />
               <span
-                className="text-[#c9581f] text-[9px] tracking-[0.35em] uppercase"
-                style={{ fontFamily: "'Share Tech Mono', monospace" }}
+                className="cur-blink text-[9px] tracking-[0.4em] uppercase"
+                style={{ fontFamily: "'Share Tech Mono', monospace", color: ORANGE }}
               >
-                Operation Reward · Prize Breakdown
+                Combat Rewards
               </span>
-              <div className="h-px flex-1 bg-gradient-to-r from-[#c9581f]/25 to-transparent max-w-28" />
+              <div className="hidden lg:block h-px flex-1" style={{ background: `${OLIVE}30` }} />
               <span
-                className="text-[#3a5238]/40 text-[9px] tracking-[0.2em]"
-                style={{ fontFamily: "'Share Tech Mono', monospace" }}
+                className="hidden lg:block text-[9px] tracking-[0.2em] uppercase"
+                style={{ fontFamily: "'Share Tech Mono', monospace", color: `${OLIVE}60` }}
               >
                 03 / 04
               </span>
             </div>
 
-            {/* Heading + pool side by side */}
-            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-8">
+            {/* BIG HEADING */}
+            <div
+              className="prize-heading"
+              style={{
+                fontFamily: "'Bebas Neue', sans-serif",
+                fontSize: "clamp(5rem, 14vw, 14rem)",
+                lineHeight: 0.83,
+                letterSpacing: "-0.01em",
+              }}
+            >
+              {/* WIN. — cream solid */}
               <div className="overflow-hidden">
-                {["PRIZES &", "GLORY."].map((line, i) => (
-                  <div key={i} className="overflow-hidden">
-                    <div
-                      className="prize-header-line leading-none"
+                <div className="ph-line" style={{ color: "#e4ddd3" }}>WIN.</div>
+              </div>
+              {/* EARN. — orange outline */}
+              <div className="overflow-hidden">
+                <div className="ph-line" style={{
+                  color: "transparent",
+                  WebkitTextStroke: `clamp(1px,0.18vw,2.5px) ${ORANGE}BB`,
+                }}>EARN.</div>
+              </div>
+              {/* DEPLOY. — olive outline — the money line gets the status colour */}
+              <div className="overflow-hidden">
+                <div className="ph-line" style={{
+                  color: "transparent",
+                  WebkitTextStroke: `clamp(1px,0.18vw,2.5px) ${OLIVE}CC`,
+                }}>DEPLOY.</div>
+              </div>
+            </div>
+          </div>
+
+          {/* Floating spinning badge — olive ring */}
+          <div className="float-badge-1 absolute top-8 right-8 lg:top-16 lg:right-16 z-20 pointer-events-none">
+            <div style={{ position: "relative", width: 90, height: 90 }}>
+              <svg className="spin-svg" viewBox="0 0 90 90" width="90" height="90" style={{ position: "absolute", inset: 0 }}>
+                <path id="cr" d="M45,45 m-33,0 a33,33 0 1,1 66,0 a33,33 0 1,1 -66,0" fill="none" />
+                <text style={{ fontFamily: "'Barlow Condensed',sans-serif", fontSize:"7.5px", letterSpacing:"0.14em", fill:`${OLIVE}AA`, fontWeight:700 }}>
+                  <textPath href="#cr">SAFE HACKATHON · 36 HRS · PCE ·</textPath>
+                </text>
+              </svg>
+              <div style={{
+                position:"absolute", inset:"18px",
+                border:`1px solid ${OLIVE}45`, borderRadius:"50%",
+                display:"flex", alignItems:"center", justifyContent:"center",
+              }}>
+                <span style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"1.1rem", color:OLIVE, filter:"brightness(1.5)", lineHeight:1 }}>36h</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* ── MAIN CONTENT GRID ──────────────────────────────────── */}
+        <div className="relative z-10 px-6 lg:px-12 max-w-screen-2xl mx-auto pb-16 lg:pb-24">
+          <div className="grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-12 lg:gap-20">
+
+            {/* LEFT: Prize rows */}
+            <div className="prize-rows">
+              <div className="flex items-center gap-3 mb-1">
+                <span
+                  className="text-[8px] tracking-[0.3em] uppercase"
+                  style={{ fontFamily:"'Share Tech Mono',monospace", color:`${OLIVE}80` }}
+                >
+                  Main Prizes
+                </span>
+                <div className="h-px flex-1" style={{ background:`${OLIVE}25` }} />
+              </div>
+
+              <PrizeRow
+                rank="01"
+                label="Grand Prize · First Strike"
+                sub="Trophy + Mentorship + Internship fast-track"
+                amount="₹1,00,000"
+              />
+              <PrizeRow
+                rank="02"
+                label="Runner Up · Second Wave"
+                sub="Trophy + Industry Connect + Certificate"
+                amount="₹50,000"
+              />
+              <PrizeRow
+                rank="03"
+                label="2nd Runner Up · Third Force"
+                sub="Trophy + Certificate of Merit"
+                amount="₹25,000"
+              />
+
+              <p
+                className="mt-6 text-[12px] leading-relaxed"
+                style={{ fontFamily:"'Barlow',sans-serif", color:"rgba(255,255,255,0.22)", maxWidth:"520px" }}
+              >
+                All top-3 teams receive trophies, certificates, industry connections, and fast-track opportunities with our defense partners.
+              </p>
+            </div>
+
+            {/* RIGHT: Pool circle + perks */}
+            <div className="right-panel flex flex-col gap-7 pt-0 lg:pt-10">
+
+              {/* Pool circle — olive dashed ring + inner olive ring */}
+              <div className="flex justify-start">
+                <div style={{ position:"relative" }}>
+                  {/* outer dashed spin: orange */}
+                  <svg className="spin-svg absolute inset-0" viewBox="0 0 180 180" width="180" height="180">
+                    <circle cx="90" cy="90" r="86" fill="none"
+                      stroke={`${ORANGE}18`} strokeWidth="1" strokeDasharray="4 8" />
+                  </svg>
+                  {/* middle static: olive */}
+                  <svg className="absolute inset-0" viewBox="0 0 180 180" width="180" height="180" style={{ transform:"rotate(180deg)" }}>
+                    <circle cx="90" cy="90" r="76" fill="none"
+                      stroke={`${OLIVE}35`} strokeWidth="1" strokeDasharray="2 12" />
+                  </svg>
+                  <div style={{
+                    width:180, height:180, borderRadius:"50%",
+                    border:`1px solid ${OLIVE}40`,
+                    display:"flex", flexDirection:"column",
+                    alignItems:"center", justifyContent:"center",
+                    position:"relative",
+                  }}>
+                    <span
+                      className="text-[7px] tracking-[0.35em] uppercase mb-1"
+                      style={{ fontFamily:"'Share Tech Mono',monospace", color:`${OLIVE}80` }}
+                    >Total Pool</span>
+                    <span
+                      className="pool-num"
+                      style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"1.6rem", color:ORANGE, letterSpacing:"0.03em", lineHeight:1.1 }}
+                    >₹0</span>
+                    <span
+                      className="text-[7px] tracking-[0.2em] uppercase mt-1"
+                      style={{ fontFamily:"'Share Tech Mono',monospace", color:`${OLIVE}55` }}
+                    >& growing</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Perks — olive corner box, olive numbering */}
+              <div className="corner-box p-6 space-y-3">
+                <p
+                  className="text-[8px] tracking-[0.3em] uppercase mb-4"
+                  style={{ fontFamily:"'Share Tech Mono',monospace", color:`${OLIVE}70` }}
+                >
+                  Beyond Cash ↓
+                </p>
+                {[
+                  "Industry Mentorship",
+                  "Internship Fast-track",
+                  "Defense Partner Connect",
+                  "Media Feature + PR",
+                  "Trophy + Certificates",
+                ].map((perk, i) => (
+                  <div key={perk} className="flex items-center gap-3 group cursor-default">
+                    {/* Numbers in olive — like a military checklist */}
+                    <span
+                      className="transition-colors text-[9px]"
                       style={{
-                        fontFamily: "'Bebas Neue', sans-serif",
-                        fontSize: "clamp(4rem, 10vw, 10rem)",
-                        letterSpacing: "0.02em",
-                        color: i === 0 ? "#d8e8d0" : "transparent",
-                        WebkitTextStroke: i === 1 ? "1px rgba(74,124,89,0.5)" : undefined,
-                        lineHeight: 0.9,
+                        fontFamily:"'Share Tech Mono',monospace",
+                        color:`${OLIVE}70`,
                       }}
                     >
-                      {line}
-                    </div>
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span
+                      className="transition-colors text-[11px] tracking-[0.08em] uppercase font-semibold group-hover:text-white/80"
+                      style={{ fontFamily:"'Barlow Condensed',sans-serif", color:"rgba(255,255,255,0.4)" }}
+                    >
+                      {perk}
+                    </span>
+                    {/* small olive dot */}
+                    <span className="ml-auto opacity-0 group-hover:opacity-100 transition-opacity" style={{ color:OLIVE, fontSize:"6px" }}>◆</span>
                   </div>
                 ))}
               </div>
 
-              {/* Total pool callout card */}
-              <div
-                className="prize-total flex-shrink-0 border border-[#c9581f]/20 p-5 lg:p-7 bg-[#0a0f09]/80"
-                style={{ backdropFilter: "blur(8px)" }}
-              >
-                <p
-                  className="text-[8px] tracking-[0.3em] text-[#c9581f]/60 uppercase mb-2"
-                  style={{ fontFamily: "'Share Tech Mono', monospace" }}
-                >
-                  Total Prize Pool
-                </p>
-                <p
-                  className="prize-shimmer leading-none mb-1"
-                  style={{
-                    fontFamily: "'Bebas Neue', sans-serif",
-                    fontSize: "clamp(2.8rem, 5vw, 5rem)",
-                    letterSpacing: "0.03em",
-                  }}
-                >
-                  {TOTAL_POOL}
-                </p>
-                <p
-                  className="text-[8px] tracking-[0.18em] text-[#3a5238]/50 uppercase"
-                  style={{ fontFamily: "'Share Tech Mono', monospace" }}
-                >
-                  in prizes + perks + incubation
-                </p>
+              {/* Floating "36h" tile */}
+              <div className="float-badge-2 self-start corner-box p-4 text-center" style={{ minWidth:90 }}>
+                <div style={{ fontFamily:"'Bebas Neue',sans-serif", fontSize:"2rem", color:ORANGE, lineHeight:1 }}>36</div>
+                <div style={{ fontFamily:"'Share Tech Mono',monospace", fontSize:"7px", letterSpacing:"0.25em", color:`${OLIVE}80`, textTransform:"uppercase", marginTop:2 }}>
+                  Hours
+                </div>
               </div>
             </div>
           </div>
+        </div>
 
-          {/* ── Orange divider ── */}
-          <div
-            className="prize-divider h-px mb-12"
-            style={{ background: "linear-gradient(90deg, #c9581f, rgba(201,88,31,0.15) 60%, transparent)" }}
-          />
-
-          {/* ── Hero prize cards: 2 col ── */}
-          <div className="prize-hero-grid grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-            {HERO_PRIZES.map((prize, i) => (
-              <HeroPrizeCard key={prize.id} prize={prize} index={i} />
-            ))}
+        {/* ── SPECIAL PRIZES ─────────────────────────────────────── */}
+        <div className="relative z-10">
+          <div className="px-6 lg:px-12 max-w-screen-2xl mx-auto mb-4">
+            <div className="flex items-center gap-3">
+              {/* olive short line */}
+              <div className="h-px w-5 flex-shrink-0" style={{ background:OLIVE }} />
+              <span
+                className="text-[8px] tracking-[0.3em] uppercase"
+                style={{ fontFamily:"'Share Tech Mono',monospace", color:`${OLIVE}70` }}
+              >
+                Special Category Awards
+              </span>
+              <div className="h-px flex-1" style={{ background:`${OLIVE}20` }} />
+            </div>
           </div>
 
-          {/* ── Tier prizes: table-style list ── */}
-          <div
-            className="prize-tier-list border border-[#1e2a1c] overflow-hidden"
-            style={{ background: "rgba(8,12,8,0.6)", backdropFilter: "blur(6px)" }}
-          >
-            {/* List header */}
-            <div className="flex items-center justify-between px-6 py-3 border-b border-[#1e2a1c] bg-[#0a0f09]/80">
-              <span
-                className="text-[8px] tracking-[0.25em] text-[#3a5238]/50 uppercase"
-                style={{ fontFamily: "'Share Tech Mono', monospace" }}
+          <div className="s-tags overflow-x-auto px-6 lg:px-12 pb-4" style={{ scrollbarWidth:"none" }}>
+            <div className="flex gap-3 w-max">
+              {[
+                { icon:"⚙", label:"Best Hardware Hack",  amt:"₹10K" },
+                { icon:"◈", label:"Best UI/UX Design",   amt:"₹10K" },
+                { icon:"◉", label:"Most Innovative",      amt:"₹10K" },
+                { icon:"★", label:"Best First-Timers",   amt:"₹5K"  },
+                { icon:"⬡", label:"Best Defense Track",  amt:"₹10K" },
+                { icon:"↯", label:"Fastest Deploy",      amt:"₹5K"  },
+              ].map((s, i) => (
+                <div key={s.label} className="s-tag">
+                  {/* odd = orange icon, even = olive icon */}
+                  <span style={{ color: i % 2 === 0 ? `${ORANGE}AA` : `${OLIVE}CC`, fontSize:"1rem" }}>
+                    {s.icon}
+                  </span>
+                  <span className="s-label">{s.label}</span>
+                  <span className="s-amt">{s.amt}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* ── ORANGE TICKER ──────────────────────────────────────── */}
+        <div className="mt-10 lg:mt-14">
+          <Ticker dark />
+        </div>
+
+        {/* ── BOTTOM CTA ─────────────────────────────────────────── */}
+        <div className="relative z-10 px-6 lg:px-12 max-w-screen-2xl mx-auto py-16 lg:py-24">
+          <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-10">
+
+            <div>
+              <p
+                className="text-[8px] tracking-[0.4em] uppercase mb-3"
+                style={{ fontFamily:"'Share Tech Mono',monospace", color:`${OLIVE}55` }}
               >
-                — Category Prizes
-              </span>
-              <span
-                className="text-[8px] tracking-[0.25em] text-[#3a5238]/50 uppercase"
-                style={{ fontFamily: "'Share Tech Mono', monospace" }}
+                What are you waiting for?
+              </p>
+              <div
+                className="bottom-heading"
+                style={{
+                  fontFamily:"'Bebas Neue',sans-serif",
+                  fontSize:"clamp(3rem, 9vw, 9rem)",
+                  lineHeight:0.83,
+                  letterSpacing:"-0.01em",
+                }}
               >
-                Award
-              </span>
+                {/* YOUR NAME — solid cream */}
+                <div className="overflow-hidden">
+                  <div className="bottom-ph" style={{ color:"#e4ddd3" }}>YOUR NAME</div>
+                </div>
+                {/* ON THE BOARD. — olive outline, not orange — intentional contrast */}
+                <div className="overflow-hidden">
+                  <div className="bottom-ph" style={{
+                    color:"transparent",
+                    WebkitTextStroke:`clamp(1px,0.15vw,2.5px) ${OLIVE}BB`,
+                  }}>ON THE BOARD.</div>
+                </div>
+              </div>
             </div>
 
-            {TIER_PRIZES.map((prize, i) => (
-              <TierPrizeRow key={prize.id} prize={prize} index={i} />
-            ))}
-          </div>
-
-          {/* ── Bottom note ── */}
-          <div className="mt-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pt-6 border-t border-[#1e2a1c]">
-            <p
-              className="text-[#3a5238]/35 text-[9px] tracking-[0.15em] uppercase max-w-sm"
-              style={{ fontFamily: "'Share Tech Mono', monospace" }}
-            >
-              Prize amounts subject to confirmation. Final details at mission briefing.
-            </p>
-            <div className="flex items-center gap-2">
-              <div className="w-px h-4 bg-[#c9581f]/30" />
+            <div className="flex flex-col items-start lg:items-end gap-4">
+              <MagneticBtn>
+                <button className="prize-reg-btn">
+                  <span>Register Now</span>
+                  <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+                    <path d="M3 13L13 3M13 3H6M13 3V10" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </MagneticBtn>
               <span
-                className="text-[#c9581f]/40 text-[9px] tracking-[0.2em] uppercase"
-                style={{ fontFamily: "'Share Tech Mono', monospace" }}
+                className="text-[9px] tracking-[0.25em] uppercase"
+                style={{ fontFamily:"'Share Tech Mono',monospace", color:`${OLIVE}55` }}
               >
-                More perks TBA
+                Free · Teams of 2–5 · 36hrs
               </span>
             </div>
           </div>
         </div>
+
       </section>
     </>
   );
