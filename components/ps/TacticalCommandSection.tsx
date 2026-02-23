@@ -417,7 +417,7 @@ function SidePanel({ track, onClose }: PanelProps) {
       className="absolute right-0 top-0 bottom-0 overflow-y-auto"
       data-side-panel
       style={{
-        width: 'clamp(280px, 35%, 380px)',
+        width: 'clamp(260px, 32%, 360px)',
         background: 'rgba(5,10,5,0.97)',
         borderLeft: `1px solid ${track.color}`,
         zIndex: 50,
@@ -575,14 +575,14 @@ export default function TacticalCommandSection() {
 
   // Responsive map dims
   useEffect(() => {
-    const measure = () => {
-      if (mapRef.current) {
-        setMapDims({ w: mapRef.current.offsetWidth, h: mapRef.current.offsetHeight })
-      }
-    }
-    measure()
-    window.addEventListener('resize', measure)
-    return () => window.removeEventListener('resize', measure)
+    const el = mapRef.current
+    if (!el) return
+    const ro = new ResizeObserver(() => {
+      setMapDims({ w: el.offsetWidth, h: el.offsetHeight })
+    })
+    ro.observe(el)
+    setMapDims({ w: el.offsetWidth, h: el.offsetHeight })
+    return () => ro.disconnect()
   }, [bootDone])
 
   const handleMarkerClick = (track: Track) => {
@@ -650,6 +650,22 @@ export default function TacticalCommandSection() {
           100% { top: 100%; }
         }
 
+        @media (max-width: 639px) {
+          [data-side-panel] {
+            position: fixed !important;
+            left: 0 !important;
+            right: 0 !important;
+            top: auto !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            max-height: 65vh;
+            border-left: none !important;
+            border-top: 1px solid rgba(34,197,94,0.3);
+            z-index: 200 !important;
+            border-radius: 12px 12px 0 0;
+          }
+        }
+
         .tac-scanline::after {
           content: '';
           position: absolute;
@@ -678,7 +694,7 @@ export default function TacticalCommandSection() {
       <section
         id="problems"
         ref={sectionRef}
-        className="relative py-24 px-6 overflow-hidden"
+        className="relative py-12 md:py-24 px-4 md:px-6 overflow-hidden"
           style={{ background: '#080c08' }}
       >
         {/* Background noise texture */}
@@ -697,7 +713,7 @@ export default function TacticalCommandSection() {
             initial={{ opacity: 0, y: 20 }}
             animate={isInView ? { opacity: 1, y: 0 } : {}}
             transition={{ duration: 0.7, ease: 'easeOut' }}
-            className="text-center mb-10"
+            className="text-center mb-6 md:mb-10"
           >
             <h2
               className="uppercase"
@@ -765,7 +781,7 @@ export default function TacticalCommandSection() {
             {/* Map container */}
             <div
               ref={mapRef}
-              className="relative tac-scanline overflow-hidden"
+              className="relative tac-scanline overflow-hidden w-full"
               onClick={(e) => {
                 // Close panel when clicking empty map area (not marker, not sidebar)
                 const target = e.target as HTMLElement
@@ -773,7 +789,9 @@ export default function TacticalCommandSection() {
                 closePanel()
               }}
               style={{
-                  height: 'clamp(380px, 55vw, 560px)',
+                  aspectRatio: '2 / 1',
+                  minHeight: '280px',
+                  maxHeight: '560px',
                   border: '1px solid rgba(34,197,94,0.12)',
                   background: 'linear-gradient(135deg, #071a0f 0%, #050e09 40%, #040c08 100%)',
                   boxShadow: 'inset 0 0 80px rgba(0,0,0,0.6)',

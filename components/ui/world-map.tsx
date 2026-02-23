@@ -51,7 +51,7 @@ function WorldMapInner({
 
   return (
     <div
-      className={`w-full aspect-[2/1] rounded-lg relative font-sans ${className ?? ""}`}
+      className={`w-full h-full rounded-lg relative font-sans ${className ?? ""}`}
       style={{ background: bgColor }}
     >
       <img

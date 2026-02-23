@@ -129,7 +129,7 @@ export default function Hero() {
               className="hero-l1 leading-none overflow-hidden"
               style={{
                 fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: "clamp(5rem, 18vw, 18rem)",
+                fontSize: "clamp(3.5rem, 18vw, 18rem)",
                 letterSpacing: "-0.01em",
                 lineHeight: 0.85,
               }}
@@ -143,20 +143,20 @@ export default function Hero() {
               className="hero-l2 leading-none overflow-hidden"
               style={{
                 fontFamily: "'Bebas Neue', sans-serif",
-                fontSize: "clamp(5rem, 18vw, 18rem)",
+                fontSize: "clamp(3.5rem, 18vw, 18rem)",
                 letterSpacing: "-0.01em",
                 lineHeight: 0.85,
                 color: "transparent",
-                WebkitTextStroke: "clamp(1px, 0.15vw, 2px) rgba(74,124,89,0.6)",
+                WebkitTextStroke: "clamp(1px, 0.2vw, 2px) rgba(74,124,89,0.6)",
               }}
             >
               HACKATHON
             </div>
           </div>
 
-          <div className="hero-bottom px-6 lg:px-12 pb-8 pt-6 w-full">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 max-w-7xl mx-auto">
-              <div className="flex gap-8">
+          <div className="hero-bottom px-4 sm:px-6 lg:px-12 pb-6 sm:pb-8 pt-4 sm:pt-6 w-full">
+            <div className="flex flex-col sm:flex-row items-center sm:items-center justify-between gap-4 max-w-7xl mx-auto">
+              <div className="flex flex-wrap justify-center sm:justify-start gap-x-6 gap-y-2">
                 <div>
                   <p className="info-label">Location</p>
                   <p className="info-value">New Panvel, MH</p>
