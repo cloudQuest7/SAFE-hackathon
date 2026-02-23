@@ -4,12 +4,12 @@ import { useEffect, useRef } from "react";
 import Link from "next/link";
 
 const navLinks = [
-  { label: "Home", href: "/" },
-  { label: "About", href: "/about" },
-  { label: "Timeline", href: "/timeline" },
-  { label: "Tracks", href: "/tracks" },
-  { label: "FAQs", href: "/faq" },
-  { label: "Contact", href: "/contact" },
+  { label: "Home", href: "#hero" },
+  { label: "About", href: "#about" },
+  { label: "Timeline", href: "#timeline" },
+  { label: "Tracks", href: "#problems" },
+  { label: "Prizes", href: "#prizes" },
+  { label: "FAQs", href: "#faq" },
 ];
 
 const socialLinks = [

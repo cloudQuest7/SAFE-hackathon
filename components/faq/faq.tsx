@@ -145,7 +145,7 @@ export default function FAQSection() {
         }
       `}</style>
 
-      <section className="bg-[#e8e8e8] overflow-hidden">
+      <section id="faq" className="bg-[#e8e8e8] overflow-hidden">
 
         {/* ── Top asset area — plenty of space for graphics ── */}
         <div className="px-6 lg:px-10 pt-20 pb-10 min-h-[160px] flex flex-col justify-end">

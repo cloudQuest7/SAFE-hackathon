@@ -110,7 +110,7 @@ export default function Hero() {
         .info-value { font-family: 'Barlow Condensed', sans-serif; font-weight: 600; font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; color: #7a9a78; }
       `}</style>
 
-      <section ref={sectionRef} className="relative h-dvh w-screen overflow-hidden bg-black flex items-center justify-center px-6">
+      <section ref={sectionRef} id="hero" className="relative h-dvh w-screen overflow-hidden bg-black flex items-center justify-center px-6">
         <StarsBackground 
           className="absolute inset-0 z-0 pointer-events-none"
           starColor="#9be3ff"
