@@ -476,17 +476,6 @@ export default function TimelineSection() {
                   <feMergeNode in="SourceGraphic" />
                 </feMerge>
               </filter>
-              {/* ── Mission complete gold burst ── */}
-              <filter id="finalGlow" x="-60%" y="-60%" width="220%" height="220%">
-                <feGaussianBlur stdDeviation="9" result="g1" />
-                <feGaussianBlur stdDeviation="3" in="SourceGraphic" result="g2" />
-                <feMerge>
-                  <feMergeNode in="g1" />
-                  <feMergeNode in="g1" />
-                  <feMergeNode in="g2" />
-                  <feMergeNode in="SourceGraphic" />
-                </feMerge>
-              </filter>
               {/* ── Ping halo ── */}
               <filter id="routeHalo" x="-30%" y="-30%" width="160%" height="160%">
                 <feGaussianBlur in="SourceGraphic" stdDeviation="5" result="blur" />
@@ -517,9 +506,9 @@ export default function TimelineSection() {
             {/* Tank — outer plain <g> for scroll position, inner motion.g for effects */}
             <g transform={`translate(${tankPos.x}, ${tankPos.y}) scale(1.4)`}>
               <motion.g
-                filter={missionComplete ? 'url(#finalGlow)' : 'url(#tankGlow)'}
-                animate={missionComplete ? { x: [0, -3, 3, -2, 2, 0], y: [0, 2, -2, 1, 0] } : {}}
-                transition={missionComplete ? { duration: 0.4, repeat: 3 } : {}}
+                filter="url(#tankGlow)"
+                animate={missionComplete ? { x: [0, -3, 3, -2, 2, 0], y: [0, 2, -2, 1, 0] } : { x: 0, y: 0 }}
+                transition={missionComplete ? { duration: 0.4, repeat: 2, repeatType: 'reverse' } : { duration: 0.2 }}
               >
                 <motion.g
                   animate={{ y: [-0.7, 0.7, -0.7] }}
