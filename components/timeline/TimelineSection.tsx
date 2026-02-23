@@ -323,11 +323,15 @@ export default function TimelineSection() {
     offset: ['start start', 'end end'],
   })
 
-  const springProg = useSpring(scrollYProgress, { stiffness: 38, damping: 28, mass: 0.9 })
+  /* Remap: tank journey occupies the first 80% of total scroll.
+     The remaining 20% holds the section at mission-complete state,
+     giving the spring enough time to fully settle at t=1 before exit. */
+  const rawProgress = useTransform(scrollYProgress, [0, 0.80], [0, 1], { clamp: true })
+  const springProg = useSpring(rawProgress, { stiffness: 38, damping: 28, mass: 0.9 })
 
   /* Header fades out once the user starts scrolling into the track */
-  const headerOpacity = useTransform(scrollYProgress, [0, 0.18, 0.30], [1, 1, 0])
-  const headerY       = useTransform(scrollYProgress, [0, 0.30], [0, -28])
+  const headerOpacity = useTransform(rawProgress, [0, 0.18, 0.30], [1, 1, 0])
+  const headerY       = useTransform(rawProgress, [0, 0.30], [0, -28])
 
   /* Measure path + set initial checkpoint positions on mount */
   useEffect(() => {
@@ -391,7 +395,7 @@ export default function TimelineSection() {
   /* ── Render ─────────────────────────────────────────────────── */
   return (
     /* Tall wrapper = scroll budget. The sticky section stays locked inside it. */
-    <div ref={wrapperRef} id="timeline" style={{ height: '500vh', position: 'relative' }}>
+    <div ref={wrapperRef} id="timeline" style={{ height: '600vh', position: 'relative' }}>
     <section
       className="sticky top-0 h-screen flex flex-col justify-center relative bg-gradient-to-b from-[#080808] to-[#1a0d08]"
       style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)' }}
@@ -412,11 +416,14 @@ export default function TimelineSection() {
           style={{ opacity: headerOpacity, y: headerY }}
           className="text-center pt-4 pb-2 flex-shrink-0 pointer-events-none relative z-20"
         >
-          <p className="text-[#607744] text-xs font-bold tracking-[0.3em] uppercase mb-3 font-mono">
-            ◈ Mission Timeline ◈
+          <p className="text-[#c9581f] text-xs font-bold tracking-[0.3em] uppercase mb-3 font-mono">
+            ◈ Objectives Inbound ◈
           </p>
-          <h2 className="text-5xl md:text-6xl font-black text-white mb-4 tracking-wide uppercase">
-            Tentative Dates
+          <h2
+            className="text-white mb-4 uppercase tracking-wider"
+            style={{ fontFamily: "'Bebas Neue', sans-serif", fontSize: "clamp(2.8rem, 7vw, 5.5rem)" }}
+          >
+            Mission Timeline
           </h2>
           <p className="text-[#A0A0A0] text-base">
             Navigate the battlefield — four checkpoints to glory.
@@ -505,14 +512,10 @@ export default function TimelineSection() {
 
             {/* Tank — outer plain <g> for scroll position, inner motion.g for effects */}
             <g transform={`translate(${tankPos.x}, ${tankPos.y}) scale(1.4)`}>
-              <motion.g
-                filter="url(#tankGlow)"
-                animate={missionComplete ? { x: [0, -3, 3, -2, 2, 0], y: [0, 2, -2, 1, 0] } : { x: 0, y: 0 }}
-                transition={missionComplete ? { duration: 0.4, repeat: 2, repeatType: 'reverse' } : { duration: 0.2 }}
-              >
+              <motion.g>
                 <motion.g
-                  animate={{ y: [-0.7, 0.7, -0.7] }}
-                  transition={{ duration: 0.36, repeat: Infinity, ease: 'easeInOut' }}
+                  animate={{ y: missionComplete ? 0 : [-0.7, 0.7, -0.7] }}
+                  transition={missionComplete ? { duration: 0.2 } : { duration: 0.36, repeat: Infinity, ease: 'easeInOut' }}
                 >
                   <TankSVG angle={tankPos.angle} />
                 </motion.g>
