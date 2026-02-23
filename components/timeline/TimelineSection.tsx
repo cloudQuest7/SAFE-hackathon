@@ -518,10 +518,10 @@ export default function TimelineSection() {
 
   /* ── Render ─────────────────────────────────────────────────── */
   return (
-    /* Tall wrapper = scroll budget. The sticky section stays locked inside it. */
-    <div ref={wrapperRef} id="timeline" style={{ height: '600vh', position: 'relative' }}>
+    /* Tall wrapper = scroll budget on desktop. Mobile flows naturally. */
+    <div ref={wrapperRef} id="timeline" className="md:h-[600vh] relative">
     <section
-      className="sticky top-0 h-screen flex flex-col justify-center relative bg-gradient-to-b from-[#080808] to-[#1a0d08]"
+      className="md:sticky md:top-0 md:h-screen h-auto flex flex-col justify-center relative bg-gradient-to-b from-[#080808] to-[#1a0d08]"
       style={{ width: '100vw', marginLeft: 'calc(50% - 50vw)' }}
     >
       {/* Grain texture overlay */}
@@ -534,11 +534,11 @@ export default function TimelineSection() {
         }}
       />
 
-      <div className="max-w-6xl mx-auto relative z-10 flex flex-col" style={{ height: '100vh' }}>
+      <div className="max-w-6xl mx-auto w-full px-4 md:px-6 relative z-10 flex flex-col md:h-screen">
         {/* Header — fades out on scroll */}
         <motion.div
           style={{ opacity: headerOpacity, y: headerY }}
-          className="text-center pt-4 pb-2 flex-shrink-0 pointer-events-none relative z-20"
+          className="text-center pt-8 md:pt-4 pb-2 flex-shrink-0 pointer-events-none relative z-20"
         >
           <p className="text-[#c9581f] text-xs font-bold tracking-[0.3em] uppercase mb-3 font-mono">
             ◈ Objectives Inbound ◈
@@ -549,7 +549,7 @@ export default function TimelineSection() {
           >
             Mission Timeline
           </h2>
-          <p className="text-[#A0A0A0] text-base">
+          <p className="text-[#A0A0A0] text-sm md:text-base">
             Navigate the battlefield — four checkpoints to glory.
           </p>
         </motion.div>
@@ -719,26 +719,14 @@ export default function TimelineSection() {
         </div>
 
         {/* ── MOBILE: Vertical winding track ── */}
-        <div className="md:hidden relative px-2 pt-4">
-          {/* Vertical road strip */}
-          <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-10 pointer-events-none">
-            <div
-              className="absolute inset-0 rounded-full"
-              style={{
-                background: 'linear-gradient(to bottom, #342816, #483c22, #342816)',
-                boxShadow: '0 0 20px rgba(0,0,0,0.6)',
-              }}
-            />
-            {/* Dashed centre line */}
-            <div
-              className="absolute inset-y-0 left-1/2 w-px"
-              style={{
-                background:
-                  'repeating-linear-gradient(to bottom, #8a7252 0px, #8a7252 12px, transparent 12px, transparent 22px)',
-                opacity: 0.38,
-              }}
-            />
-          </div>
+        <div className="md:hidden relative px-4 pt-2 pb-10">
+          {/* Vertical track line */}
+          <div className="absolute left-1/2 -translate-x-1/2 top-0 bottom-0 w-px pointer-events-none"
+            style={{
+              background: 'repeating-linear-gradient(to bottom, #c9581f 0px, #c9581f 14px, transparent 14px, transparent 24px)',
+              opacity: 0.55,
+            }}
+          />
 
           <div className="relative flex flex-col gap-0 py-6">
             {CHECKPOINTS.map((cp, i) => {
@@ -845,7 +833,7 @@ export default function TimelineSection() {
           whileInView={{ opacity: 1 }}
           transition={{ delay: 0.6, duration: 0.8 }}
           viewport={{ once: true }}
-          className="text-center text-[#607744] text-xs font-mono tracking-[0.25em] uppercase mt-4 hidden md:block"
+          className="text-center text-[#607744] text-xs font-mono tracking-[0.25em] uppercase mt-4 md:block hidden"
         >
           ▸ Scroll to advance the mission ◂
         </motion.p>
