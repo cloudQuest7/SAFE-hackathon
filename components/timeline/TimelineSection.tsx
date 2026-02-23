@@ -505,22 +505,6 @@ export default function TimelineSection() {
             {/* Hidden path for measurement */}
             <path ref={pathRef} d={TRACK_D} fill="none" stroke="none" strokeWidth="0" />
 
-            {/* Checkpoint flags + milestone cards */}
-            {CHECKPOINTS.map((cp, i) => {
-              const pos = cpPositions[i]
-              if (!pos) return null
-              return (
-                <CheckpointCard
-                  key={cp.id}
-                  cp={cp}
-                  pos={pos}
-                  active={isActive(cp.id)}
-                  isFinal={cp.id === 4}
-                  pingKey={pingKeys[cp.id] ?? 0}
-                />
-              )
-            })}
-
             {/* Dust particles */}
             {dustKey > 0 && (
               <g key={dustKey}>
@@ -545,6 +529,22 @@ export default function TimelineSection() {
                 </motion.g>
               </motion.g>
             </g>
+
+            {/* Checkpoint flags + milestone cards — rendered after tank so they appear on top */}
+            {CHECKPOINTS.map((cp, i) => {
+              const pos = cpPositions[i]
+              if (!pos) return null
+              return (
+                <CheckpointCard
+                  key={cp.id}
+                  cp={cp}
+                  pos={pos}
+                  active={isActive(cp.id)}
+                  isFinal={cp.id === 4}
+                  pingKey={pingKeys[cp.id] ?? 0}
+                />
+              )
+            })}
 
             {/* ── BASE CAMP start marker — HUD reticle ── */}
             <g>
