@@ -723,5 +723,3 @@ export default function TimelineSection() {
     </div>
   )
 }
-
-export default TimelineSection
